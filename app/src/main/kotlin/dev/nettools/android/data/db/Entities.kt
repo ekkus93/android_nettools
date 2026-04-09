@@ -64,7 +64,8 @@ data class TransferHistoryEntity(
     val fileName: String,
     val remoteDir: String,
     val fileSizeBytes: Long,
-    val status: String
+    val status: String,
+    val errorMessage: String? = null,
 ) {
     /** Converts this entity to its domain model counterpart. */
     fun toDomain(): TransferHistoryEntry = TransferHistoryEntry(
@@ -76,7 +77,8 @@ data class TransferHistoryEntity(
         fileName = fileName,
         remoteDir = remoteDir,
         fileSizeBytes = fileSizeBytes,
-        status = HistoryStatus.valueOf(status)
+        status = HistoryStatus.valueOf(status),
+        errorMessage = errorMessage,
     )
 }
 
@@ -90,7 +92,8 @@ fun TransferHistoryEntry.toEntity(): TransferHistoryEntity = TransferHistoryEnti
     fileName = fileName,
     remoteDir = remoteDir,
     fileSizeBytes = fileSizeBytes,
-    status = status.name
+    status = status.name,
+    errorMessage = errorMessage,
 )
 
 // ── KnownHost ─────────────────────────────────────────────────────────────────
@@ -104,4 +107,26 @@ data class KnownHostEntity(
     val host: String,
     val port: Int,
     val fingerprint: String
+)
+
+// ── QueuedJob ─────────────────────────────────────────────────────────────────
+
+/**
+ * Room entity that persists a queued transfer job so it survives process death.
+ * Sensitive credentials (password) are stored separately in [CredentialStore]
+ * and retrieved at restore time using [jobId] as the key.
+ */
+@Entity(tableName = "queued_jobs")
+data class QueuedJobEntity(
+    @PrimaryKey val jobId: String,
+    val host: String,
+    val port: Int,
+    val username: String,
+    val authType: String,
+    val keyPath: String?,
+    val profileId: String?,
+    val direction: String,
+    val localPath: String,
+    val remotePath: String,
+    val enqueuedAt: Long,
 )

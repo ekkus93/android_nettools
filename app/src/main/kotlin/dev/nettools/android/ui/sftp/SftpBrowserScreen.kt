@@ -14,13 +14,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -108,6 +110,7 @@ fun SftpBrowserScreen(
                     }
                 },
                 actions = {
+                    var sortMenuExpanded by remember { mutableStateOf(false) }
                     IconButton(onClick = { viewModel.navigateHome() }) {
                         Icon(Icons.Filled.Home, contentDescription = "Home directory")
                     }
@@ -116,6 +119,36 @@ fun SftpBrowserScreen(
                     }
                     IconButton(onClick = { viewModel.requestNewDir() }) {
                         Icon(Icons.Filled.CreateNewFolder, contentDescription = "New directory")
+                    }
+                    Box {
+                        IconButton(onClick = { sortMenuExpanded = true }) {
+                            Icon(Icons.Filled.SortByAlpha, contentDescription = "Sort order")
+                        }
+                        DropdownMenu(
+                            expanded = sortMenuExpanded,
+                            onDismissRequest = { sortMenuExpanded = false },
+                        ) {
+                            SortOrder.entries.forEach { order ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            when (order) {
+                                                SortOrder.NAME -> "Sort by Name"
+                                                SortOrder.SIZE -> "Sort by Size"
+                                                SortOrder.DATE -> "Sort by Date"
+                                            }
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortOrder(order)
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = if (state.sortOrder == order) {
+                                        { Icon(Icons.Filled.Check, contentDescription = null) }
+                                    } else null,
+                                )
+                            }
+                        }
                     }
                 },
             )
@@ -297,7 +330,7 @@ private fun FileEntryRow(
         },
         leadingContent = {
             Icon(
-                imageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.Filled.InsertDriveFile,
+                imageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
                 contentDescription = if (entry.isDirectory) "Directory" else "File",
                 tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant,

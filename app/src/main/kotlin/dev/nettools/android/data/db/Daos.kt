@@ -102,3 +102,37 @@ interface KnownHostDao {
     @Query("DELETE FROM known_hosts WHERE host = :host AND port = :port")
     suspend fun deleteByHostAndPort(host: String, port: Int)
 }
+
+// ── QueuedJobDao ──────────────────────────────────────────────────────────────
+
+/**
+ * Data Access Object for [QueuedJobEntity].
+ * Used to persist and restore transfer jobs across process death.
+ */
+@Dao
+interface QueuedJobDao {
+
+    /** Returns all persisted queued jobs in enqueue order (oldest first). */
+    @Query("SELECT * FROM queued_jobs ORDER BY enqueuedAt ASC")
+    suspend fun getAll(): List<QueuedJobEntity>
+
+    /**
+     * Inserts or replaces a queued job record.
+     *
+     * @param entity Entity to persist.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entity: QueuedJobEntity)
+
+    /**
+     * Removes the queued job record for the given [jobId].
+     *
+     * @param jobId Job ID to delete.
+     */
+    @Query("DELETE FROM queued_jobs WHERE jobId = :jobId")
+    suspend fun deleteById(jobId: String)
+
+    /** Removes all queued job records. */
+    @Query("DELETE FROM queued_jobs")
+    suspend fun clearAll()
+}

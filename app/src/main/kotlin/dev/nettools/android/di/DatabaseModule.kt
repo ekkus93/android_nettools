@@ -10,6 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.nettools.android.data.db.AppDatabase
 import dev.nettools.android.data.db.ConnectionProfileDao
 import dev.nettools.android.data.db.KnownHostDao
+import dev.nettools.android.data.db.QueuedJobDao
 import dev.nettools.android.data.db.TransferHistoryDao
 import dev.nettools.android.data.repository.ConnectionProfileRepositoryImpl
 import dev.nettools.android.data.repository.KnownHostRepositoryImpl
@@ -39,7 +40,9 @@ object DatabaseModule {
             context = context,
             klass = AppDatabase::class.java,
             name = "nettools.db"
-        ).build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+            .build()
 
     /**
      * Provides the [ConnectionProfileDao] from the database.
@@ -67,6 +70,15 @@ object DatabaseModule {
     @Provides
     fun provideKnownHostDao(db: AppDatabase): KnownHostDao =
         db.knownHostDao()
+
+    /**
+     * Provides the [QueuedJobDao] from the database.
+     *
+     * @param db The [AppDatabase] instance.
+     */
+    @Provides
+    fun provideQueuedJobDao(db: AppDatabase): QueuedJobDao =
+        db.queuedJobDao()
 
     /**
      * Binds [ConnectionProfileRepositoryImpl] as the [ConnectionProfileRepository] implementation.

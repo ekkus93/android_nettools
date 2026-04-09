@@ -19,6 +19,9 @@ import kotlinx.coroutines.launch
 import net.schmizz.sshj.SSHClient
 import javax.inject.Inject
 
+/** Sort order for remote directory listings. */
+enum class SortOrder { NAME, SIZE, DATE }
+
 /** UI state for the SFTP Browser screen. */
 data class SftpBrowserUiState(
     val currentPath: String = "~",
@@ -27,6 +30,7 @@ data class SftpBrowserUiState(
     val errorMessage: String? = null,
     val isConnected: Boolean = false,
     val breadcrumbs: List<String> = listOf("~"),
+    val sortOrder: SortOrder = SortOrder.NAME,
     /** Non-null when the browser is in "pick" mode and an item has been selected. */
     val selectedPath: String? = null,
     /** Dialog state for rename operation. */
@@ -130,10 +134,11 @@ class SftpBrowserViewModel @Inject constructor(
             runCatching { sftpClient.listDirectory(requireClient(), path) }
                 .onSuccess { entries ->
                     val crumbs = buildBreadcrumbs(path)
+                    val order = _uiState.value.sortOrder
                     _uiState.update {
                         it.copy(
                             currentPath = path,
-                            entries = entries.sortedWith(compareBy({ !it.isDirectory }, { it.name })),
+                            entries = entries.sortedWith(sortComparator(order)),
                             breadcrumbs = crumbs,
                             isLoading = false,
                         )
@@ -233,6 +238,16 @@ class SftpBrowserViewModel @Inject constructor(
     /** Dismisses the current error message. */
     fun onErrorDismissed() = _uiState.update { it.copy(errorMessage = null) }
 
+    /** Changes the sort order for directory listings and re-sorts the current entries. */
+    fun setSortOrder(order: SortOrder) {
+        _uiState.update { state ->
+            state.copy(
+                sortOrder = order,
+                entries = state.entries.sortedWith(sortComparator(order)),
+            )
+        }
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCleared() {
@@ -285,5 +300,16 @@ class SftpBrowserViewModel @Inject constructor(
             else -> t.message ?: "An unexpected error occurred"
         }
         _uiState.update { it.copy(isLoading = false, errorMessage = message) }
+    }
+
+    companion object {
+        /** Returns a comparator that sorts entries by [order], directories always first. */
+        internal fun sortComparator(order: SortOrder): Comparator<RemoteFileEntry> =
+            when (order) {
+                SortOrder.NAME -> compareBy({ !it.isDirectory }, { it.name.lowercase() })
+                SortOrder.SIZE -> compareBy({ !it.isDirectory }, { it.sizeBytes })
+                SortOrder.DATE -> compareByDescending<RemoteFileEntry> { it.isDirectory }
+                    .thenByDescending { it.modifiedAt }
+            }
     }
 }

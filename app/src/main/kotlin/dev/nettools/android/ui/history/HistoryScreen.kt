@@ -1,5 +1,6 @@
 package dev.nettools.android.ui.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,7 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -24,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +55,8 @@ import java.util.Locale
 
 /**
  * Transfer History screen — lists all past transfers with status badges.
+ * Supports filtering by file name, host, or remote directory via a search field.
+ * Tapping an entry shows a full-detail dialog including error messages for failures.
  *
  * @param navController Navigation controller for back navigation.
  * @param viewModel The [HistoryViewModel] supplying history data.
@@ -61,6 +68,8 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val history by viewModel.history.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedEntry by viewModel.selectedEntry.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -76,7 +85,7 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
-                    if (history.isNotEmpty()) {
+                    if (history.isNotEmpty() || searchQuery.isNotBlank()) {
                         IconButton(onClick = { showClearDialog = true }) {
                             Icon(
                                 imageVector = Icons.Filled.DeleteSweep,
@@ -88,20 +97,52 @@ fun HistoryScreen(
             )
         },
     ) { padding ->
-        if (history.isEmpty()) {
-            EmptyHistoryPlaceholder(modifier = Modifier.padding(padding))
-        } else {
-            LazyColumn(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
-                items(history, key = { it.id }) { entry ->
-                    HistoryEntryRow(entry = entry)
-                    HorizontalDivider()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Search by file, host, or path") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                            Icon(Icons.Filled.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                },
+                singleLine = true,
+            )
+            if (history.isEmpty()) {
+                EmptyHistoryPlaceholder(
+                    query = searchQuery,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(history, key = { it.id }) { entry ->
+                        HistoryEntryRow(
+                            entry = entry,
+                            onClick = { viewModel.onEntrySelected(entry) },
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
+    }
+
+    selectedEntry?.let { entry ->
+        HistoryDetailDialog(
+            entry = entry,
+            onDismiss = viewModel::onDetailDismissed,
+        )
     }
 
     if (showClearDialog) {
@@ -122,9 +163,75 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun HistoryEntryRow(entry: TransferHistoryEntry) {
+private fun HistoryDetailDialog(
+    entry: TransferHistoryEntry,
+    onDismiss: () -> Unit,
+) {
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.getDefault()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = entry.fileName,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                DetailRow("Status", entry.status.name.replaceFirstChar { it.uppercase() })
+                DetailRow("Direction", entry.direction.name.replaceFirstChar { it.uppercase() })
+                DetailRow("Host", entry.host)
+                DetailRow("Remote path", "${entry.remoteDir}/${entry.fileName}")
+                DetailRow("Size", entry.fileSizeBytes.toFormattedSize())
+                DetailRow("Date", dateFormat.format(Date(entry.timestamp)))
+                if (entry.status == HistoryStatus.FAILED && !entry.errorMessage.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Error",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = entry.errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
+}
+
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "$label: ",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(100.dp),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun HistoryEntryRow(
+    entry: TransferHistoryEntry,
+    onClick: () -> Unit,
+) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()) }
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         headlineContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -187,15 +294,27 @@ private fun StatusBadge(status: HistoryStatus) {
 }
 
 @Composable
-private fun EmptyHistoryPlaceholder(modifier: Modifier = Modifier) {
+private fun EmptyHistoryPlaceholder(
+    query: String,
+    modifier: Modifier = Modifier,
+) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("No transfers yet", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Completed transfers will appear here",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (query.isBlank()) {
+                Text("No transfers yet", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Completed transfers will appear here",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text("No matches for \"$query\"", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Try a different search term",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

@@ -76,7 +76,10 @@ class TransferForegroundService : LifecycleService() {
                 val jobId = intent.getStringExtra(EXTRA_JOB_ID)
                 if (jobId != null) cancelTransfer(jobId)
             }
-            else -> processAllQueued()
+            else -> lifecycleScope.launch {
+                progressHolder.restorePersistedJobs()
+                processAllQueued()
+            }
         }
         return START_NOT_STICKY
     }
@@ -206,7 +209,8 @@ class TransferForegroundService : LifecycleService() {
                         progressHolder.updateJobStatus(jobId, TransferStatus.COMPLETED)
                     }
 
-                    recordHistory(params, finalStatus, bytesTransferred)
+                    recordHistory(params, finalStatus, bytesTransferred, errorMsg)
+                    progressHolder.clearPersistedJob(jobId)
 
                     val remoteFileName = params.job.remotePath.substringAfterLast('/')
                     val nm = getSystemService(NotificationManager::class.java)
@@ -326,6 +330,7 @@ class TransferForegroundService : LifecycleService() {
         params: PendingTransferParams,
         status: TransferStatus,
         bytesTransferred: Long,
+        errorMsg: String? = null,
     ) {
         val historyStatus = when (status) {
             TransferStatus.COMPLETED -> HistoryStatus.SUCCESS
@@ -346,6 +351,7 @@ class TransferForegroundService : LifecycleService() {
                     remoteDir = remoteDir,
                     fileSizeBytes = bytesTransferred,
                     status = historyStatus,
+                    errorMessage = errorMsg,
                 )
             )
         }

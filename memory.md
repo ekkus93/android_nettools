@@ -70,3 +70,23 @@ Primary reviewed issues captured there:
 - `TransferProgressHolder` needs atomic state updates and should be the single progress source
 - `SftpBrowserScreen` is not wired to pass/connect with transfer credentials
 - local picker results are SAF URIs, but transfer code currently assumes `java.io.File`
+
+## 2026-04-09T02:17:45Z - Claude Sonnet 4.6 - Stub code replaced with real implementations
+
+Commit: 88ac628
+
+All previously-stubbed functionality is now fully implemented:
+
+### Changes made
+- **ScpClient**: real `callbackFlow` streaming via SSHJ `TransferListener`; `.part` suffix + atomic rename on upload; SFTP offset-based resumable download; old stubs removed
+- **TransferForegroundService**: full rewrite — dequeues `PendingTransferParams` from `TransferProgressHolder`, resolves SAF `content://` URIs to temp files, connects SSH, streams progress updates, records history, handles cancellation with `NonCancellable` cleanup
+- **SshConnectionManager**: added `peekHostKey(host, port)` — connects without auth to capture SHA-256 fingerprint for TOFU pre-flight
+- **TransferViewModel**: real TOFU pre-flight in `startTransfer()` using `peekHostKey`; added `prepareSftpBrowse()` to store credentials in holder; removed `@Suppress` on `historyRepository`
+- **SftpBrowserViewModel**: injected `TransferProgressHolder`; `init {}` reads and clears `pendingSftpConnectionParams` for auto-connect
+- **TransferScreen**: Browse button calls `viewModel.prepareSftpBrowse()` before navigating to SFTP browser
+- **MainActivity**: added `navArgument("jobId")` on PROGRESS route (was always returning empty string)
+- **SftpConnectionParams**: new data class for in-memory credential passing (credentials never go through nav args)
+
+### Build/test status
+`./gradlew assembleDebug` → BUILD SUCCESSFUL  
+`./gradlew test` → BUILD SUCCESSFUL (all tests pass)
