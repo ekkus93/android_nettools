@@ -81,6 +81,12 @@ fun TransferScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.navigateToSftpBrowser.collect {
+            navController.navigate(Routes.SFTP_BROWSER)
+        }
+    }
+
     // Show error snackbar
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let {
@@ -305,8 +311,8 @@ fun TransferScreen(
                 supportingText = state.remotePathError?.let { { Text(it) } },
                 trailingIcon = {
                     TextButton(
-                        onClick = { viewModel.prepareSftpBrowse(); navController.navigate(Routes.SFTP_BROWSER) },
-                        enabled = state.host.isNotBlank() && state.username.isNotBlank(),
+                        onClick = { viewModel.browseRemotePath() },
+                        enabled = !state.isConnecting && state.host.isNotBlank() && state.username.isNotBlank(),
                     ) {
                         Text("Browse…")
                     }

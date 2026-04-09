@@ -13,6 +13,28 @@
 
 **Verification:** `./gradlew lintDebug` and `./gradlew test` both pass after these fixes.
 
+## 2026-04-09T05:07:47Z - GPT-5.4 - Installed debug build on connected device
+
+**Device:** `SM_A546E` over USB via `adb`, package `dev.nettools.android` confirmed installed with `versionName=1.0`.
+
+**Environment note:** Local Android builds needed `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` because `/usr/lib/jvm/java-21-openjdk-amd64` did not provide the required `JAVA_COMPILER` capability for Gradle.
+
+## 2026-04-09T05:40:25Z - GPT-5.4 - Fixed first-connect Remote Path browse host-key flow
+
+**Bug fixed:** The Transfer screen's **Browse** action now runs through the same TOFU host-key preflight as **Transfer**, so first-time SSH connections show the fingerprint trust dialog instead of failing with the generic "An unexpected error".
+
+**Implementation:** `TransferViewModel` now tracks whether a trusted connection should continue into transfer dispatch or SFTP browser navigation, emits a dedicated browser navigation event after trust, and reuses shared connection-field validation for browse preflight. Added `TransferViewModelTest` to cover the first-connect browse acceptance path.
+
+**Verification:** `./gradlew lintDebug test assembleDebug` passed with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and the updated debug APK was installed on the connected `SM_A546E` device.
+
+## 2026-04-09T05:49:25Z - GPT-5.4 - Replaced copied launcher icon with custom NetTools icon
+
+**Design:** Replaced the inherited ToDo launcher art with a custom adaptive icon: dark blue network-node background plus an orange toolbox foreground.
+
+**Implementation:** Updated `drawable/ic_launcher_background.xml`, added `drawable/ic_launcher_foreground.xml`, and pointed both adaptive icon XML files at the new drawable foreground so Android 8+ launchers use the custom art.
+
+**Verification:** `./gradlew lintDebug assembleDebug installDebug` succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and the updated debug build was installed on the connected `SM_A546E`.
+
 ## 2026-04-09T04:16:41Z - GPT-5.4 - Added code review follow-up TODO file
 
 **Docs:** Created `docs/CODE_REVIEW1_TODO.md` with a detailed post-review task list covering queue serialization, resumable progress, SFTP directory delete support, breadcrumb fixes, and SAF transfer correctness.

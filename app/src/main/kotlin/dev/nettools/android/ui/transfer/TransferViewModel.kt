@@ -50,6 +50,11 @@ data class PendingHostKey(
     val oldFingerprint: String? = null,
 )
 
+private enum class PendingConnectionAction {
+    TRANSFER,
+    BROWSE,
+}
+
 /**
  * Full UI state for the SCP Transfer screen.
  */
@@ -112,6 +117,12 @@ class TransferViewModel @Inject constructor(
     /** One-shot navigation event — emits the job ID when a transfer has been dispatched. */
     private val _navigateToProgress = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val navigateToProgress: SharedFlow<String> = _navigateToProgress.asSharedFlow()
+
+    /** One-shot navigation event — emitted when the SFTP browser should open. */
+    private val _navigateToSftpBrowser = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val navigateToSftpBrowser: SharedFlow<Unit> = _navigateToSftpBrowser.asSharedFlow()
+
+    private var pendingConnectionAction: PendingConnectionAction? = null
 
     init {
         viewModelScope.launch {
@@ -177,19 +188,24 @@ class TransferViewModel @Inject constructor(
     fun onHostKeyAccepted() {
         val state = _uiState.value
         val pending = state.pendingHostKey ?: return
+        val action = pendingConnectionAction ?: PendingConnectionAction.TRANSFER
         viewModelScope.launch {
             knownHostsManager.acceptHost(
                 host = pending.host,
                 port = state.port.toIntOrNull() ?: 22,
                 fingerprint = pending.fingerprint,
             )
+            pendingConnectionAction = null
             _uiState.update { it.copy(pendingHostKey = null) }
-            dispatchTransfer()
+            executeTrustedAction(action)
         }
     }
 
     /** Called when the user rejects the presented host key. */
-    fun onHostKeyRejected() = _uiState.update { it.copy(pendingHostKey = null) }
+    fun onHostKeyRejected() {
+        pendingConnectionAction = null
+        _uiState.update { it.copy(pendingHostKey = null, isConnecting = false) }
+    }
 
     // ── Transfer dispatch ─────────────────────────────────────────────────────
 
@@ -203,6 +219,19 @@ class TransferViewModel @Inject constructor(
      */
     fun startTransfer() {
         if (!validate()) return
+        beginConnectionAction(PendingConnectionAction.TRANSFER)
+    }
+
+    /**
+     * Validates the connection fields and opens the remote-path browser after the host key is
+     * trusted. This uses the same TOFU pre-flight flow as [startTransfer].
+     */
+    fun browseRemotePath() {
+        if (!validateConnectionFields()) return
+        beginConnectionAction(PendingConnectionAction.BROWSE)
+    }
+
+    private fun beginConnectionAction(action: PendingConnectionAction) {
         viewModelScope.launch {
             val state = _uiState.value
             val port = state.port.toIntOrNull() ?: 22
@@ -227,6 +256,7 @@ class TransferViewModel @Inject constructor(
             when {
                 stored == null -> {
                     // Never seen this host — show TOFU dialog.
+                    pendingConnectionAction = action
                     _uiState.update {
                         it.copy(
                             isConnecting = false,
@@ -239,6 +269,7 @@ class TransferViewModel @Inject constructor(
                 }
                 stored != liveFingerprint -> {
                     // Key has changed — show warning dialog.
+                    pendingConnectionAction = action
                     _uiState.update {
                         it.copy(
                             isConnecting = false,
@@ -253,8 +284,9 @@ class TransferViewModel @Inject constructor(
                 }
                 else -> {
                     // Key is already trusted — proceed immediately.
+                    pendingConnectionAction = null
                     _uiState.update { it.copy(isConnecting = false) }
-                    dispatchTransfer()
+                    executeTrustedAction(action)
                 }
             }
         }
@@ -265,7 +297,7 @@ class TransferViewModel @Inject constructor(
      * SFTP Browser can read them on launch without passing secrets through nav arguments.
      * Must be called before navigating to [Routes.SFTP_BROWSER].
      */
-    fun prepareSftpBrowse() {
+    private fun prepareSftpBrowse() {
         val state = _uiState.value
         val port = state.port.toIntOrNull() ?: 22
         progressHolder.pendingSftpConnectionParams = SftpConnectionParams(
@@ -276,6 +308,16 @@ class TransferViewModel @Inject constructor(
             password = state.password.ifBlank { null },
             keyPath = state.keyPath.ifBlank { null },
         )
+    }
+
+    private suspend fun executeTrustedAction(action: PendingConnectionAction) {
+        when (action) {
+            PendingConnectionAction.TRANSFER -> dispatchTransfer()
+            PendingConnectionAction.BROWSE -> {
+                prepareSftpBrowse()
+                _navigateToSftpBrowser.emit(Unit)
+            }
+        }
     }
 
     private suspend fun dispatchTransfer() {
@@ -317,6 +359,7 @@ class TransferViewModel @Inject constructor(
      * Called by the service or from an error callback when the host key is new.
      */
     fun onUnknownHostKey(error: TransferError.UnknownHostKey) {
+        pendingConnectionAction = PendingConnectionAction.TRANSFER
         _uiState.update {
             it.copy(
                 pendingHostKey = PendingHostKey(
@@ -331,6 +374,7 @@ class TransferViewModel @Inject constructor(
      * Surfaces a [TransferError.HostKeyChanged] as a warning dialog.
      */
     fun onHostKeyChanged(error: TransferError.HostKeyChanged) {
+        pendingConnectionAction = PendingConnectionAction.TRANSFER
         _uiState.update {
             it.copy(
                 pendingHostKey = PendingHostKey(
@@ -367,12 +411,19 @@ class TransferViewModel @Inject constructor(
     private fun validate(): Boolean {
         val s = _uiState.value
         var valid = true
+        valid = validateConnectionFields() && valid
+        if (s.localPath.isBlank()) { _uiState.update { it.copy(localPathError = "Local path is required") }; valid = false }
+        if (s.remotePath.isBlank()) { _uiState.update { it.copy(remotePathError = "Remote path is required") }; valid = false }
+        return valid
+    }
+
+    private fun validateConnectionFields(): Boolean {
+        val s = _uiState.value
+        var valid = true
         if (s.host.isBlank()) { _uiState.update { it.copy(hostError = "Host is required") }; valid = false }
         val port = s.port.toIntOrNull()
         if (port == null || port !in 1..65535) { _uiState.update { it.copy(portError = "Port must be 1–65535") }; valid = false }
         if (s.username.isBlank()) { _uiState.update { it.copy(usernameError = "Username is required") }; valid = false }
-        if (s.localPath.isBlank()) { _uiState.update { it.copy(localPathError = "Local path is required") }; valid = false }
-        if (s.remotePath.isBlank()) { _uiState.update { it.copy(remotePathError = "Remote path is required") }; valid = false }
         return valid
     }
 }
