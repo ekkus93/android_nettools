@@ -45,18 +45,35 @@ class NotificationHelper @Inject constructor(
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
 
+        val contentText = buildString {
+            if (progress.isResuming && progress.resumeOffsetBytes > 0L) {
+                append("Resuming from ")
+                append(progress.resumeOffsetBytes.toFormattedSize())
+                append(" · ")
+            }
+            append(progress.bytesTransferred.toFormattedSize())
+            append(" / ")
+            append(progress.totalBytes.toFormattedSize())
+        }
+
         return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setContentTitle("Transferring $fileName")
-            .setContentText(
-                "${progress.bytesTransferred.toFormattedSize()} / " +
-                    progress.totalBytes.toFormattedSize()
-            )
+            .setContentText(contentText)
             .setProgress(100, percent.coerceAtLeast(0), percent < 0)
             .setOngoing(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelPi)
             .build()
     }
+
+    /** Builds a generic foreground notification shown while the queue is being restored. */
+    fun createQueueNotification(channelId: String): Notification =
+        NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setContentTitle("Preparing transfer queue")
+            .setContentText("Restoring queued transfers…")
+            .setOngoing(true)
+            .build()
 
     /**
      * Builds a notification indicating a successful transfer.

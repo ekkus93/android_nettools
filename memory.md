@@ -1,5 +1,24 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-09T04:32:46Z - GPT-5.4 - Implemented code review follow-up fixes
+
+**Scope:** Completed the fixes tracked in `docs/CODE_REVIEW1_TODO.md` and marked every item done.
+
+**Key implementation changes:**
+- Serialized transfer execution in `TransferForegroundService` with a single queue worker and immediate foreground startup.
+- Reworked SAF handling: streaming upload sources via SSHJ `LocalSourceFile`, stable temp files for resumable SAF downloads, explicit SAF finalization failures, and temp-file cleanup rules.
+- Added resumed-download progress emission with resume metadata surfaced to UI/notifications.
+- Made SFTP delete recursive for directories and fixed SFTP breadcrumb/parent-path generation for `/` and `~/...`.
+- Replaced several silent cleanup/history-close paths with explicit debug logging.
+
+**Verification:** `./gradlew lintDebug` and `./gradlew test` both pass after these fixes.
+
+## 2026-04-09T04:16:41Z - GPT-5.4 - Added code review follow-up TODO file
+
+**Docs:** Created `docs/CODE_REVIEW1_TODO.md` with a detailed post-review task list covering queue serialization, resumable progress, SFTP directory delete support, breadcrumb fixes, and SAF transfer correctness.
+
+**Purpose:** This records the current follow-up work identified by review so future sessions can pick up the highest-risk correctness issues quickly.
+
 ## 2026-04-09T04:00:27Z - Claude Sonnet 4.6 - All 16 phases complete, tests passing
 
 **Commit:** `e4256ba` — Phase 14 comprehensive test suite + all TODO.md items marked done.

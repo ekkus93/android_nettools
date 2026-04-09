@@ -1,5 +1,6 @@
 package dev.nettools.android.data.ssh
 
+import android.util.Log
 import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.data.security.KnownHostsManager.VerificationResult
 import dev.nettools.android.domain.model.AuthType
@@ -20,6 +21,7 @@ class SshConnectionManager @Inject constructor() {
 
     companion object {
         private const val CONNECT_TIMEOUT_MS = 30_000
+        private const val TAG = "SshConnectionManager"
     }
 
     /**
@@ -48,7 +50,9 @@ class SshConnectionManager @Inject constructor() {
                 emptyList()
         })
         runCatching { client.connect(host, port) }
+            .onFailure { Log.d(TAG, "Unable to capture host key fingerprint before SSH auth", it) }
         runCatching { client.close() }
+            .onFailure { Log.d(TAG, "Failed to close SSH client after host-key probe", it) }
         return captured
     }
 
@@ -99,7 +103,11 @@ class SshConnectionManager @Inject constructor() {
 
             return client
         } catch (e: Exception) {
-            try { client.close() } catch (_: Exception) {}
+            try {
+                client.close()
+            } catch (closeError: Exception) {
+                Log.d(TAG, "Failed to close SSH client after connection error", closeError)
+            }
             throw ErrorMapper.mapException(e)
         }
     }

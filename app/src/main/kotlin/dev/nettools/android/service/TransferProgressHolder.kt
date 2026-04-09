@@ -74,6 +74,9 @@ class TransferProgressHolder @Inject constructor(
     /** Removes and returns the next pending transfer, or null if the queue is empty. */
     fun dequeue(): PendingTransferParams? = pendingQueue.poll()
 
+    /** Returns true when transfers are still waiting in the in-memory queue. */
+    fun hasPendingJobs(): Boolean = pendingQueue.isNotEmpty()
+
     /**
      * Restores persisted queued jobs from Room into the in-memory queue.
      * Should be called once by [TransferForegroundService] on start so that

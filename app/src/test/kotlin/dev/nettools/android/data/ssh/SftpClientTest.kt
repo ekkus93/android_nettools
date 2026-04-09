@@ -164,10 +164,45 @@ class SftpClientTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
 
+        every { sftp.type("/path/to/remove.txt") } returns FileMode.Type.REGULAR
+
         sftpClient.delete(sshClient, "/path/to/remove.txt")
 
         verify { sftp.rm("/path/to/remove.txt") }
         verify { sftp.close() }
+    }
+
+    @Test
+    fun `delete - removes empty directory with rmdir`() = runTest {
+        val sftp = mockk<SFTPClient>(relaxed = true)
+        val sshClient = makeSSH(sftp)
+
+        every { sftp.type("/empty-dir") } returns FileMode.Type.DIRECTORY
+        every { sftp.ls("/empty-dir") } returns emptyList()
+
+        sftpClient.delete(sshClient, "/empty-dir")
+
+        verify { sftp.rmdir("/empty-dir") }
+        verify(exactly = 0) { sftp.rm(any()) }
+    }
+
+    @Test
+    fun `delete - removes non-empty directories recursively`() = runTest {
+        val sftp = mockk<SFTPClient>(relaxed = true)
+        val sshClient = makeSSH(sftp)
+
+        every { sftp.type("/dir") } returns FileMode.Type.DIRECTORY
+        every { sftp.type("/dir/nested.txt") } returns FileMode.Type.REGULAR
+        every { sftp.ls("/dir") } returns listOf(
+            makeResourceInfo(".", 0L, isDir = true),
+            makeResourceInfo("..", 0L, isDir = true),
+            makeResourceInfo("nested.txt", 5L, isDir = false),
+        )
+
+        sftpClient.delete(sshClient, "/dir")
+
+        verify { sftp.rm("/dir/nested.txt") }
+        verify { sftp.rmdir("/dir") }
     }
 
     // ── getFileSize ───────────────────────────────────────────────────────────

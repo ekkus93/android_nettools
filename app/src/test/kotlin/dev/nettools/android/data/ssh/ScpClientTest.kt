@@ -5,6 +5,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.Runs
 import io.mockk.verify
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import net.schmizz.sshj.SSHClient
@@ -71,6 +72,26 @@ class ScpClientTest {
         verify { sftpClient.close() }
     }
 
+    @Test
+    fun `upload - accepts custom LocalSourceFile for streaming sources`() = runTest {
+        val sshClient = mockk<SSHClient>()
+        val scpTransfer = mockk<SCPFileTransfer>()
+        val sftpClient = mockk<SFTPClient>(relaxed = true)
+        val source = mockk<LocalSourceFile>()
+
+        every { sshClient.newSCPFileTransfer() } returns scpTransfer
+        every { sshClient.newSFTPClient() } returns sftpClient
+        every { source.name } returns "stream.bin"
+        every { source.length } returns 32L
+        every { scpTransfer.transferListener = any() } just Runs
+        every { scpTransfer.upload(source, any<String>()) } just Runs
+
+        scpClient.upload(sshClient, source, "/dest/stream.bin").toList()
+
+        verify { scpTransfer.upload(source, "/dest/stream.bin.part") }
+        verify { sftpClient.rename("/dest/stream.bin.part", "/dest/stream.bin") }
+    }
+
     // ── download error propagation ────────────────────────────────────────────
 
     @Test
@@ -114,6 +135,45 @@ class ScpClientTest {
 
         verify { sftpClient.open("/remote/partial.bin") }
         verify { remoteFile.fetchAttributes() }
+    }
+
+    @Test
+    fun `downloadResumable - emits resumed progress with resume offset metadata`() = runTest {
+        val content = "0123456789ABCDEF"
+        val localFile = File(tempDir.toFile(), "resume.bin")
+            .apply { writeText(content.substring(0, 8)) }
+        val sshClient = mockk<SSHClient>()
+        val sftpClient = mockk<SFTPClient>(relaxed = true)
+        val remoteFile = mockk<RemoteFile>(relaxed = true)
+        val attrs = mockk<FileAttributes>()
+        var served = false
+
+        every { sshClient.newSFTPClient() } returns sftpClient
+        every { sftpClient.open(any<String>()) } returns remoteFile
+        every { remoteFile.fetchAttributes() } returns attrs
+        every { attrs.size } returns content.length.toLong()
+        every { remoteFile.read(any<Long>(), any(), any<Int>(), any<Int>()) } answers {
+            if (served) {
+                -1
+            } else {
+                served = true
+                val buffer = arg<ByteArray>(1)
+                val bytes = content.substring(8).toByteArray()
+                bytes.copyInto(buffer, destinationOffset = 0)
+                bytes.size
+            }
+        }
+
+        val firstProgress = scpClient.downloadResumable(
+            sshClient,
+            "/remote/resume.bin",
+            localFile,
+            resumeOffset = 8L,
+        ).first()
+
+        assertTrue(firstProgress.isResuming)
+        assertEquals(8L, firstProgress.resumeOffsetBytes)
+        assertEquals(8L, firstProgress.bytesTransferred)
     }
 
     @Test

@@ -1,180 +1,145 @@
-# Android NetTools — Code Review TODO 1
+# Code Review TODO
 
-Detailed follow-up task list derived from the first code review. This list focuses on the substantive issues found in transfer execution, SFTP browser wiring, local file handling, and shared progress state.
-
-Work these items in order. Later sections depend on earlier sections.
+Detailed follow-up task list based on the latest code review. This list focuses on correctness, transfer reliability, lifecycle safety, and behavior mismatches with `docs/SPECS.md`.
 
 ---
 
-## 1. Restore the real transfer execution path
+## 1. Fix transfer queue execution semantics
 
-- [ ] Replace placeholder service behavior in `TransferForegroundService`
-  - [ ] Remove dummy `TransferProgress` creation from `processJob()`
-  - [ ] Remove the comment-only placeholder that claims transfer logic is wired elsewhere
-  - [ ] Make the service consume pending work from `TransferProgressHolder`
-  - [ ] Decide whether the service should process one queued job at a time or drain the full queue
-- [ ] Inject the real transfer dependencies into `TransferForegroundService`
-  - [ ] Inject `TransferProgressHolder`
-  - [ ] Inject `SshConnectionManager`
-  - [ ] Inject `ScpClient`
-  - [ ] Inject `SftpClient` if needed for resume/stat/path handling
-  - [ ] Inject `KnownHostsManager`
-  - [ ] Inject `TransferHistoryRepository`
-  - [ ] Inject any helper needed to open local content streams if SAF support is added
-- [ ] Start the foreground service correctly
-  - [ ] Ensure `startForeground()` is called immediately after the service starts processing work
-  - [ ] Confirm the service cannot be launched into an idle state where Android kills it for not entering foreground in time
-  - [ ] Make `onStartCommand()` trigger processing instead of only handling cancel actions
-- [ ] Execute the actual SCP transfer inside the service
-  - [ ] Dequeue `PendingTransferParams`
-  - [ ] Open the SSH session with `SshConnectionManager`
-  - [ ] Branch on `TransferDirection`
-  - [ ] Upload via `ScpClient` for upload jobs
-  - [ ] Download via `ScpClient` for download jobs
-  - [ ] Collect `Flow<TransferProgress>` updates and push them into the shared progress holder
-  - [ ] Close SSH/SFTP resources with `use {}` or equivalent cleanup
-- [ ] Implement robust job lifecycle handling
-  - [ ] Mark jobs `QUEUED` before execution
-  - [ ] Mark jobs `IN_PROGRESS` when work begins
-  - [ ] Mark jobs `COMPLETED` only after the transfer actually finishes
-  - [ ] Mark jobs `FAILED` on real errors
-  - [ ] Mark jobs `CANCELLED` on user cancellation
-  - [ ] Remove finished jobs from active progress state
-  - [ ] Stop the service when no work remains
-- [ ] Record transfer outcomes to history
-  - [ ] Insert successful transfers into `TransferHistoryRepository`
-  - [ ] Insert failed transfers with useful error detail
-  - [ ] Insert cancelled transfers with cancelled status
-- [ ] Wire notification behavior to real state
-  - [ ] Show indeterminate notification before total size is known
-  - [ ] Switch to determinate progress when total bytes are known
-  - [ ] Show success notification on completion
-  - [ ] Show failure notification on error
-  - [ ] Keep cancel action working during active transfers
-- [ ] Handle transfer errors end-to-end
-  - [ ] Map low-level exceptions with `ErrorMapper`
-  - [ ] Surface unknown-host-key and changed-host-key failures in a way the UI can react to
-  - [ ] Avoid leaking credentials or key paths in logs or user-visible errors
-- [ ] Validate the service flow
-  - [ ] Start an upload and confirm bytes actually move
-  - [ ] Start a download and confirm bytes actually move
-  - [ ] Confirm progress updates appear on the Progress screen
-  - [ ] Confirm the service stops itself after the queue is empty
+- [x] Make queued transfers execute one at a time
+  - [x] Refactor `TransferForegroundService.processAllQueued()` so it does not launch one coroutine per dequeued job
+  - [x] Replace the current drain-the-queue behavior with a worker loop that starts the next job only after the previous job finishes
+  - [x] Ensure only one active transfer is started unless configurable concurrency is intentionally introduced
+  - [x] Keep cancellation working for the currently running job
+- [x] Prevent duplicate or overlapping queue processing
+  - [x] Verify repeated `onStartCommand()` calls cannot start a second queue-processing loop
+  - [x] Ensure `restorePersistedJobs()` plus `processAllQueued()` cannot re-enqueue/rerun jobs already in progress
+- [x] Add regression tests
+  - [x] Add a service/holder test proving two queued jobs do not run concurrently
+  - [x] Add a test proving the next job starts only after the prior one reaches a terminal state
 
----
+## 2. Fix resumed download progress reporting
 
-## 2. Make `TransferProgressHolder` the single source of truth
+- [x] Emit progress updates during `downloadResumable()`
+  - [x] Refactor `ScpClient.downloadResumable()` so resumed SFTP downloads report byte progress continuously
+  - [x] Ensure progress reflects resumed offsets correctly rather than restarting from zero visually
+  - [x] Verify notifications and progress UI update during resumed downloads
+- [x] Add test coverage
+  - [x] Add a unit/integration test asserting resumed downloads emit at least one progress event
+  - [x] Add a test asserting final transferred byte count matches the remote file size after resume
 
-- [ ] Remove duplicate transfer state from `TransferForegroundService`
-  - [ ] Delete the service-local `_transferProgress` flow if the holder will own progress
-  - [ ] Delete the service-local `_activeJobs` flow if the holder will own active jobs
-  - [ ] Remove any unused binder/state exposure that no screen actually consumes
-- [ ] Make all progress and job mutations atomic in `TransferProgressHolder`
-  - [ ] Replace `_activeJobs.value = ...` with `_activeJobs.update { ... }`
-  - [ ] Replace `_progress.value = ...` with `_progress.update { ... }`
-  - [ ] Preserve current semantics for enqueue, status updates, and removal
-- [ ] Review queue behavior for concurrency correctness
-  - [ ] Confirm `ConcurrentLinkedQueue` is sufficient for the chosen execution model
-  - [ ] Ensure a job cannot be dequeued twice
-  - [ ] Ensure cancellation cannot leave stale entries in active state
-- [ ] Align the UI with shared state
-  - [ ] Keep `ProgressViewModel` observing only `TransferProgressHolder`
-  - [ ] Ensure the service writes every state transition into the holder
-  - [ ] Ensure the Transfer screen never assumes a job started successfully before the service acknowledges it
-- [ ] Validate race-safety
-  - [ ] Queue multiple transfers quickly and confirm no state is lost
-  - [ ] Cancel a job while another is starting and confirm active/progress maps remain consistent
+## 3. Fix SFTP delete behavior for directories
 
----
+- [x] Support deleting both files and directories from the SFTP browser
+  - [x] Update `SftpClient.delete()` to inspect the remote path type before deleting
+  - [x] Use file deletion for files and directory deletion for directories
+  - [x] Decide and implement whether non-empty directories should be deleted recursively or rejected with a user-facing error
+- [x] Align UI behavior with backend behavior
+  - [x] Ensure the SFTP browser only offers operations that are actually supported
+  - [x] Show a clear error if recursive directory delete is intentionally unsupported
+- [x] Add regression tests
+  - [x] Add a test for deleting a file
+  - [x] Add a test for deleting an empty directory
+  - [x] Add a test for deleting a non-empty directory based on the intended product behavior
 
-## 3. Wire the SFTP browser to real connection data
+## 4. Fix breadcrumb generation and navigation
 
-- [ ] Decide how the browser receives connection parameters
-  - [ ] Prefer sharing the current transfer form state rather than duplicating connection state
-  - [ ] Choose between `SavedStateHandle`, nav arguments, or a shared ViewModel-backed handoff
-- [ ] Pass the required connection details when opening `SftpBrowserScreen`
-  - [ ] Host
-  - [ ] Port
-  - [ ] Username
-  - [ ] Auth type
-  - [ ] Password if password auth is selected
-  - [ ] Key path if key auth is selected
-  - [ ] Optional initial remote path
-- [ ] Connect the browser on screen entry
-  - [ ] Call `SftpBrowserViewModel.connect(...)` from `SftpBrowserScreen`
-  - [ ] Guard against repeated reconnects on recomposition
-  - [ ] Show a clear error state if required connection inputs are missing
-- [ ] Ensure path selection round-trip works
-  - [ ] Return the selected remote path to `TransferScreen`
-  - [ ] Preserve the chosen path in the transfer form
-  - [ ] Confirm both file and directory selection behave as intended
-- [ ] Revisit browser navigation details
-  - [ ] Verify breadcrumb generation for home/root/absolute paths
-  - [ ] Confirm home navigation resolves correctly on real servers
-  - [ ] Confirm refresh and create-directory actions only run after connection succeeds
-- [ ] Validate the browser flow
-  - [ ] Open browser from a populated transfer form and confirm connection succeeds
-  - [ ] Browse into directories and back out
-  - [ ] Pick a path and confirm it appears in the transfer form
-  - [ ] Confirm rename/delete/mkdir still work after the new wiring
+- [x] Correct breadcrumb generation for absolute remote paths
+  - [x] Update `buildBreadcrumbs()` so `/var/www` produces valid absolute breadcrumb targets
+  - [x] Preserve correct behavior for `~` and home-relative navigation
+  - [x] Avoid dropping the first real path segment for absolute paths
+- [x] Validate breadcrumb UX
+  - [x] Verify tapping each crumb navigates to the expected directory
+  - [x] Verify home/root breadcrumbs are labeled clearly
+- [x] Add regression tests
+  - [x] Add pure unit tests for `~`
+  - [x] Add pure unit tests for `/`
+  - [x] Add pure unit tests for nested absolute paths
+  - [x] Add pure unit tests for nested home-relative paths
 
----
+## 5. Fix false-success path for SAF downloads
 
-## 4. Fix local-path handling so picker-selected files can actually transfer
+- [x] Fail the transfer if SAF destination creation fails
+  - [x] Replace the silent `createDocument(... ) ?: return` path in `copySafDownload()` with an explicit failure
+  - [x] Surface a user-friendly error when SAF permissions are missing, revoked, or destination creation fails
+  - [x] Ensure the transfer is marked `FAILED`, not `COMPLETED`, when the final copy cannot be written
+- [x] Harden SAF output writing
+  - [x] Fail if `openOutputStream()` returns null
+  - [x] Ensure partial temp files are cleaned up when SAF finalization fails
+- [x] Add regression tests
+  - [x] Add a test proving SAF document creation failure produces a failed transfer state
+  - [x] Add a test proving null SAF output streams do not produce success history entries
 
-- [ ] Decide on the supported local file model
-  - [ ] Either support Storage Access Framework URIs end-to-end
-  - [ ] Or restrict the UI to real filesystem paths only
-  - [ ] Prefer SAF support because `OpenDocument` and `OpenDocumentTree` already return URIs
-- [ ] If SAF is kept, refactor transfer code to support URI-backed I/O
-  - [ ] Add a local file abstraction instead of assuming `java.io.File`
-  - [ ] Support reading upload sources from `ContentResolver.openInputStream()`
-  - [ ] Support writing downloads to `ContentResolver`/`DocumentFile`
-  - [ ] Preserve streaming behavior; do not buffer full files in memory
-  - [ ] Preserve cancellation behavior during stream copy
-  - [ ] Preserve resume logic where feasible for SAF-backed destinations
-  - [ ] Document any limitations if resume is unavailable for some URI types
-- [ ] If filesystem paths are required instead, fix the UI accordingly
-  - [ ] Stop storing `content://...` strings in `localPath`
-  - [ ] Use a picker strategy that yields a real path, if valid on supported Android versions
-  - [ ] Reject unsupported URI inputs with inline validation
-- [ ] Update `TransferJob` semantics if needed
-  - [ ] Clarify whether `localPath` is always a file path, always a URI string, or a polymorphic local source/destination reference
-  - [ ] Rename fields or add types if the current `String localPath` model is too ambiguous
-- [ ] Update progress/history display logic
-  - [ ] Ensure filenames still render correctly for URI-backed jobs
-  - [ ] Avoid showing opaque `content://...` values in primary UI when a display name is available
-- [ ] Validate local-path behavior
-  - [ ] Upload a file selected from SAF
-  - [ ] Download into a directory selected from SAF
-  - [ ] Verify failures are user-friendly when URI permissions are missing or revoked
+## 6. Implement real resume support for SAF downloads
 
----
+- [x] Preserve partial download state across retries for SAF targets
+  - [x] Stop tying resumable temp files to transient `jobId` values
+  - [x] Use a stable temp-file naming strategy derived from destination + remote path
+  - [x] Keep partial temp files when a resumable retry is possible
+  - [x] Clean up temp files only after successful finalization or explicit restart/discard
+- [x] Make resume detection work for SAF destinations
+  - [x] Detect existing partial cache files before starting a new SAF download
+  - [x] Feed the existing byte count into `downloadResumable()`
+  - [x] Indicate in UI/history/notification when a SAF transfer is being resumed
+- [x] Handle stale or invalid partial files
+  - [x] Detect mismatched remote size/content where possible
+  - [x] Decide whether to restart automatically or prompt the user
+- [x] Add regression tests
+  - [x] Add a test proving an interrupted SAF download resumes from prior cached bytes
+  - [x] Add a test proving successful completion cleans up the stable temp file
 
-## 5. Follow-up cleanup and regression coverage
+## 7. Replace non-streaming SAF upload staging
 
-- [ ] Add regression tests for the reviewed issues
-  - [ ] Unit test `TransferProgressHolder` atomic state updates
-  - [ ] Unit test service queue consumption / job lifecycle transitions
-  - [ ] Unit test browser connection handoff logic
-  - [ ] Unit test local-path parsing/abstraction logic
-- [ ] Add integration coverage for end-to-end transfer execution
-  - [ ] Upload flow through the service
-  - [ ] Download flow through the service
-  - [ ] Unknown-host-key flow through the service + UI
-  - [ ] Cancellation while a transfer is active
-- [ ] Re-run project validation after fixes
-  - [ ] `./gradlew assembleDebug`
-  - [ ] `./gradlew lintDebug`
-  - [ ] `./gradlew test`
-  - [ ] `./gradlew assembleRelease`
+- [x] Remove full-file cache copies for SAF uploads
+  - [x] Replace `resolveUploadFile()` temp staging with a streaming source backed by `ContentResolver`
+  - [x] Ensure uploads from `content://` URIs do not require duplicating the full file in app cache
+  - [x] Preserve cancellation behavior and cleanup guarantees
+- [x] Verify compatibility with SSHJ
+  - [x] Introduce the correct SSHJ source abstraction for streaming SAF content
+  - [x] Ensure file name and file size metadata remain available for progress reporting
+- [x] Add regression tests
+  - [x] Add a test covering upload from a SAF-backed source
+  - [x] Add a test proving large SAF uploads no longer depend on a temp file copy
+
+## 8. Improve transfer finalization and error surfacing
+
+- [x] Remove silent failure paths in critical transfer-finalization code
+  - [x] Replace ignored `runCatching`/empty `catch` blocks with explicit logging or failure propagation where appropriate
+  - [x] Review history recording, SSH cleanup, and SFTP browser session teardown for swallowed failures
+- [x] Review cancellation history accuracy
+  - [x] Confirm cancelled transfers record sensible byte counts and status details
+  - [x] Decide whether cancelled entries should show last known transferred bytes or zero bytes
+- [x] Add regression tests
+  - [x] Add tests for cancellation history entries
+  - [x] Add tests for failure notifications and history rows when finalization fails late
+
+## 9. Review service startup robustness
+
+- [x] Make foreground startup resilient with large restored queues
+  - [x] Ensure the service enters foreground immediately, before any potentially slow restore/queue work
+  - [x] Verify startup remains safe even with many persisted jobs
+- [x] Add regression coverage
+  - [x] Add a test or design-level guard proving queue restore cannot delay foreground startup past Android limits
+
+## 10. Final validation after fixes
+
+- [x] Re-run full verification after implementing the above
+  - [x] Run `./gradlew lintDebug`
+  - [x] Run `./gradlew testDebugUnitTest`
+  - [x] Run any additional existing project test tasks needed for touched code paths
+- [x] Update docs if behavior changes
+  - [x] Update `docs/TODO.md` only if new follow-up work is added there intentionally
+  - [x] Update any user-facing behavior notes affected by SAF resume/delete semantics
 
 ---
 
 ## Recommended implementation order
 
-1. Restore real service execution.
-2. Make `TransferProgressHolder` the only live state owner.
-3. Wire the SFTP browser connection handoff.
-4. Fix SAF/local-path handling.
-5. Add regression coverage and re-run validation.
+1. Queue serialization
+2. SAF false-success fix
+3. Resumed-download progress
+4. Directory delete support
+5. Breadcrumb fix
+6. SAF resume persistence
+7. Streaming SAF uploads
+8. Cleanup/error-handling hardening

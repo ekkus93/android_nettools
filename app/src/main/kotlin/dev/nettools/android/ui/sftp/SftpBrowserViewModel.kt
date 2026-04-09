@@ -1,5 +1,6 @@
 package dev.nettools.android.ui.sftp
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,7 +59,6 @@ class SftpBrowserViewModel @Inject constructor(
     private val knownHostsManager: KnownHostsManager,
     private val progressHolder: TransferProgressHolder,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(SftpBrowserUiState())
 
     /** Current SFTP browser state. */
@@ -150,9 +150,7 @@ class SftpBrowserViewModel @Inject constructor(
 
     /** Navigates to the parent of the current directory. */
     fun navigateUp() {
-        val current = _uiState.value.currentPath
-        val parent = current.substringBeforeLast('/', "~").ifBlank { "~" }
-        navigate(parent)
+        navigate(parentPath(_uiState.value.currentPath))
     }
 
     /** Navigates to the remote home directory. */
@@ -251,7 +249,11 @@ class SftpBrowserViewModel @Inject constructor(
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCleared() {
-        try { sshClient?.close() } catch (_: Exception) {}
+        try {
+            sshClient?.close()
+        } catch (e: Exception) {
+            Log.d(TAG, "Failed to close SFTP browser SSH client", e)
+        }
         super.onCleared()
     }
 
@@ -278,20 +280,6 @@ class SftpBrowserViewModel @Inject constructor(
     private fun requireClient(): SSHClient =
         sshClient ?: error("SSH client is not connected")
 
-    private fun buildBreadcrumbs(path: String): List<String> {
-        if (path == "~" || path == "/") return listOf(path)
-        return path.split("/").filter { it.isNotBlank() }.let { parts ->
-            buildList {
-                add("~")
-                var accumulated = ""
-                parts.drop(1).forEach { part ->
-                    accumulated = "$accumulated/$part"
-                    add(accumulated)
-                }
-            }
-        }
-    }
-
     private fun handleError(t: Throwable) {
         val message = when (t) {
             is TransferError.AuthFailure -> "Authentication failed: ${t.message}"
@@ -303,6 +291,8 @@ class SftpBrowserViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "SftpBrowserViewModel"
+
         /** Returns a comparator that sorts entries by [order], directories always first. */
         internal fun sortComparator(order: SortOrder): Comparator<RemoteFileEntry> =
             when (order) {
@@ -311,5 +301,42 @@ class SftpBrowserViewModel @Inject constructor(
                 SortOrder.DATE -> compareByDescending<RemoteFileEntry> { it.isDirectory }
                     .thenByDescending { it.modifiedAt }
             }
+
+        /** Builds a breadcrumb trail whose values are valid navigation targets. */
+        internal fun buildBreadcrumbs(path: String): List<String> = when {
+            path == "~" -> listOf("~")
+            path == "/" -> listOf("/")
+            path.startsWith("~/") -> {
+                val parts = path.removePrefix("~/").split('/').filter { it.isNotBlank() }
+                buildList {
+                    add("~")
+                    var current = "~"
+                    parts.forEach { part ->
+                        current = "$current/$part"
+                        add(current)
+                    }
+                }
+            }
+            path.startsWith("/") -> {
+                val parts = path.removePrefix("/").split('/').filter { it.isNotBlank() }
+                buildList {
+                    add("/")
+                    var current = ""
+                    parts.forEach { part ->
+                        current += "/$part"
+                        add(current)
+                    }
+                }
+            }
+            else -> listOf(path)
+        }
+
+        /** Returns the parent path for both root and home-relative remote paths. */
+        internal fun parentPath(path: String): String = when {
+            path == "~" || path == "/" -> path
+            path.startsWith("~/") -> path.substringBeforeLast('/').ifBlank { "~" }
+            path.startsWith("/") -> path.substringBeforeLast('/').ifBlank { "/" }
+            else -> path.substringBeforeLast('/').ifBlank { "~" }
+        }
     }
 }

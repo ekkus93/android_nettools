@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.StreamCopier
 import net.schmizz.sshj.xfer.FileSystemFile
+import net.schmizz.sshj.xfer.LocalSourceFile
 import net.schmizz.sshj.xfer.TransferListener
 import java.io.File
 import javax.inject.Inject
@@ -37,11 +38,20 @@ class ScpClient @Inject constructor() {
         sshClient: SSHClient,
         localFile: File,
         remotePath: String,
-    ): Flow<TransferProgress> = transferFlow(localFile.name, localFile.length()) { listener ->
+    ): Flow<TransferProgress> = upload(sshClient, FileSystemFile(localFile), remotePath)
+
+    /**
+     * Uploads [localSource] to [remotePath] on the remote host.
+     */
+    fun upload(
+        sshClient: SSHClient,
+        localSource: LocalSourceFile,
+        remotePath: String,
+    ): Flow<TransferProgress> = transferFlow(localSource.name, localSource.length) { listener ->
         val partPath = "$remotePath.part"
         val scp = sshClient.newSCPFileTransfer()
         scp.transferListener = listener
-        scp.upload(FileSystemFile(localFile), partPath)
+        scp.upload(localSource, partPath)
         sshClient.newSFTPClient().use { sftp -> sftp.rename(partPath, remotePath) }
     }
 
@@ -84,29 +94,58 @@ class ScpClient @Inject constructor() {
         remotePath: String,
         localFile: File,
         resumeOffset: Long,
-    ): Flow<TransferProgress> {
+    ): Flow<TransferProgress> = callbackFlow {
         val fileName = remotePath.substringAfterLast('/')
-        return transferFlow(fileName, totalBytes = -1L) { _ ->
-            localFile.parentFile?.mkdirs()
-            sshClient.newSFTPClient().use { sftp ->
-                val remoteFile = sftp.open(remotePath)
-                try {
-                    val totalSize = remoteFile.fetchAttributes().size
-                    java.io.RandomAccessFile(localFile, "rw").use { raf ->
-                        raf.seek(resumeOffset)
-                        val buf = ByteArray(DEFAULT_BUFFER_SIZE)
-                        var offset = resumeOffset
-                        while (offset < totalSize) {
-                            val read = remoteFile.read(offset, buf, 0, buf.size)
-                            if (read <= 0) break
-                            raf.write(buf, 0, read)
-                            offset += read
-                        }
-                    }
-                } finally {
-                    remoteFile.close()
-                }
+        val startTime = System.currentTimeMillis()
+
+        val ioJob = launch(Dispatchers.IO) {
+            fun emitProgress(bytesTransferred: Long, totalBytes: Long) {
+                val elapsedSec = (System.currentTimeMillis() - startTime).coerceAtLeast(1L) / 1000.0
+                val speed = (bytesTransferred - resumeOffset).coerceAtLeast(0L) / elapsedSec
+                trySend(
+                    TransferProgress(
+                        fileName = fileName,
+                        bytesTransferred = bytesTransferred,
+                        totalBytes = totalBytes,
+                        speedBytesPerSec = speed,
+                        isResuming = resumeOffset > 0L,
+                        resumeOffsetBytes = resumeOffset,
+                    )
+                )
             }
+
+            try {
+                localFile.parentFile?.mkdirs()
+                sshClient.newSFTPClient().use { sftp ->
+                    val remoteFile = sftp.open(remotePath)
+                    try {
+                        val totalSize = remoteFile.fetchAttributes().size
+                        java.io.RandomAccessFile(localFile, "rw").use { raf ->
+                            raf.seek(resumeOffset)
+                            emitProgress(resumeOffset, totalSize)
+                            val buf = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var offset = resumeOffset
+                            while (offset < totalSize) {
+                                val read = remoteFile.read(offset, buf, 0, buf.size)
+                                if (read <= 0) break
+                                raf.write(buf, 0, read)
+                                offset += read
+                                emitProgress(offset, totalSize)
+                            }
+                        }
+                    } finally {
+                        remoteFile.close()
+                    }
+                }
+            } catch (e: Exception) {
+                close(e)
+                return@launch
+            }
+            withContext(NonCancellable) { close() }
+        }
+
+        awaitClose {
+            if (isActive) ioJob.cancel()
         }
     }
 

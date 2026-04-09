@@ -149,6 +149,34 @@ class SftpBrowserViewModelSortTest {
         }
     }
 
+    @Test
+    fun `buildBreadcrumbs - keeps root breadcrumb for absolute paths`() {
+        val breadcrumbs = SftpBrowserViewModel.buildBreadcrumbs("/var/www/html")
+
+        assertEquals(listOf("/", "/var", "/var/www", "/var/www/html"), breadcrumbs)
+    }
+
+    @Test
+    fun `buildBreadcrumbs - keeps home breadcrumb for home relative paths`() {
+        val breadcrumbs = SftpBrowserViewModel.buildBreadcrumbs("~/projects/nettools")
+
+        assertEquals(listOf("~", "~/projects", "~/projects/nettools"), breadcrumbs)
+    }
+
+    @Test
+    fun `parentPath - handles root and absolute children correctly`() {
+        assertEquals("/", SftpBrowserViewModel.parentPath("/"))
+        assertEquals("/", SftpBrowserViewModel.parentPath("/var"))
+        assertEquals("/var", SftpBrowserViewModel.parentPath("/var/www"))
+    }
+
+    @Test
+    fun `parentPath - handles home relative children correctly`() {
+        assertEquals("~", SftpBrowserViewModel.parentPath("~"))
+        assertEquals("~", SftpBrowserViewModel.parentPath("~/projects"))
+        assertEquals("~/projects", SftpBrowserViewModel.parentPath("~/projects/nettools"))
+    }
+
     // Standalone assertion helper to avoid importing org.junit.jupiter.api.Assertions.assertFalse
     private fun assertFalse(condition: Boolean, message: String = "") {
         assertTrue(!condition, message)

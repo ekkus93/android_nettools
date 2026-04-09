@@ -8,12 +8,14 @@ import android.os.Binder
 import android.os.IBinder
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import android.util.Log
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.data.ssh.ErrorMapper
 import dev.nettools.android.data.ssh.ScpClient
+import dev.nettools.android.data.ssh.SftpClient
 import dev.nettools.android.data.ssh.SshConnectionManager
 import dev.nettools.android.data.ssh.TransferProgress
 import dev.nettools.android.domain.model.HistoryStatus
@@ -27,8 +29,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import net.schmizz.sshj.xfer.FileSystemFile
+import net.schmizz.sshj.xfer.LocalSourceFile
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -47,12 +53,14 @@ class TransferForegroundService : LifecycleService() {
         const val ACTION_CANCEL = "dev.nettools.android.CANCEL_TRANSFER"
         const val EXTRA_JOB_ID = "job_id"
         private const val FOREGROUND_NOTIFICATION_ID = 1
+        private const val TAG = "TransferFgService"
     }
 
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var progressHolder: TransferProgressHolder
     @Inject lateinit var sshConnectionManager: SshConnectionManager
     @Inject lateinit var scpClient: ScpClient
+    @Inject lateinit var sftpClient: SftpClient
     @Inject lateinit var knownHostsManager: KnownHostsManager
     @Inject lateinit var historyRepository: TransferHistoryRepository
 
@@ -61,6 +69,8 @@ class TransferForegroundService : LifecycleService() {
 
     /** Guards against double-processing the same job ID. */
     private val runningJobIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    private var queueWorkerJob: Job? = null
 
     private val binder = TransferServiceBinder()
 
@@ -76,9 +86,10 @@ class TransferForegroundService : LifecycleService() {
                 val jobId = intent.getStringExtra(EXTRA_JOB_ID)
                 if (jobId != null) cancelTransfer(jobId)
             }
-            else -> lifecycleScope.launch {
-                progressHolder.restorePersistedJobs()
-                processAllQueued()
+
+            else -> {
+                ensureForegroundStarted()
+                ensureQueueWorkerRunning()
             }
         }
         return START_NOT_STICKY
@@ -103,186 +114,225 @@ class TransferForegroundService : LifecycleService() {
 
     // ── Private implementation ────────────────────────────────────────────────
 
-    private fun processAllQueued() {
-        while (true) {
-            val params = progressHolder.dequeue() ?: break
-            if (runningJobIds.add(params.job.id)) {
-                processJob(params)
+    private fun ensureQueueWorkerRunning() {
+        if (queueWorkerJob?.isActive == true) return
+
+        queueWorkerJob = lifecycleScope.launch {
+            try {
+                progressHolder.restorePersistedJobs()
+                drainQueueSequentially(
+                    dequeue = { progressHolder.dequeue() },
+                    shouldProcess = { params -> runningJobIds.add(params.job.id) },
+                ) { params ->
+                    supervisorScope {
+                        val transferJob = launch { executeJob(params) }
+                        jobCoroutines[params.job.id] = transferJob
+                        transferJob.join()
+                    }
+                }
+            } finally {
+                queueWorkerJob = null
+                checkAndStopIfEmpty()
             }
         }
     }
 
-    private fun processJob(params: PendingTransferParams) {
+    private suspend fun executeJob(params: PendingTransferParams) {
         val jobId = params.job.id
+        val remoteFileName = params.job.remotePath.substringAfterLast('/')
 
-        // Start foreground immediately to satisfy the 5-second ANR window.
-        val initialNotification = notificationHelper.createProgressNotification(
-            jobId = jobId,
-            fileName = params.job.remotePath.substringAfterLast('/'),
-            progress = TransferProgress("", 0L, -1L, 0.0),
-            channelId = TRANSFER_CHANNEL_ID,
+        startForeground(
+            FOREGROUND_NOTIFICATION_ID,
+            notificationHelper.createProgressNotification(
+                jobId = jobId,
+                fileName = remoteFileName,
+                progress = TransferProgress(fileName = remoteFileName, bytesTransferred = 0L, totalBytes = -1L, speedBytesPerSec = 0.0),
+                channelId = TRANSFER_CHANNEL_ID,
+            ),
         )
-        startForeground(FOREGROUND_NOTIFICATION_ID, initialNotification)
         progressHolder.updateJobStatus(jobId, TransferStatus.IN_PROGRESS)
 
-        val coroutineJob = lifecycleScope.launch {
-            var bytesTransferred = 0L
-            var finalStatus = TransferStatus.COMPLETED
-            var errorMsg: String? = null
-            var uploadTempFile: File? = null
-            var downloadTempFile: File? = null
+        var bytesTransferred = 0L
+        var finalStatus = TransferStatus.COMPLETED
+        var errorMsg: String? = null
+        var downloadTarget: DownloadTarget? = null
+        var safFinalizationAttempted = false
+        var safFinalizationSucceeded = false
 
-            try {
-                withContext(Dispatchers.IO) {
-                    val sshClient = sshConnectionManager.connect(
-                        host = params.host,
-                        port = params.port,
-                        username = params.username,
-                        authType = params.authType,
-                        password = params.password,
-                        keyPath = params.keyPath,
-                        knownHostsManager = knownHostsManager,
-                    )
-                    try {
-                        when (params.job.direction) {
-                            TransferDirection.UPLOAD -> {
-                                val (file, temp) = resolveUploadFile(params.job.localPath, jobId)
-                                uploadTempFile = temp
-                                scpClient.upload(sshClient, file, params.job.remotePath)
-                                    .collect { progress ->
-                                        bytesTransferred = progress.bytesTransferred
-                                        progressHolder.updateProgress(jobId, progress)
-                                        updateNotification(jobId, progress)
-                                    }
-                            }
-                            TransferDirection.DOWNLOAD -> {
-                                val remoteFileName = params.job.remotePath.substringAfterLast('/')
-                                val (file, temp) = resolveDownloadFile(
-                                    params.job.localPath, remoteFileName, jobId
-                                )
-                                downloadTempFile = temp
+        try {
+            withContext(Dispatchers.IO) {
+                val sshClient = sshConnectionManager.connect(
+                    host = params.host,
+                    port = params.port,
+                    username = params.username,
+                    authType = params.authType,
+                    password = params.password,
+                    keyPath = params.keyPath,
+                    knownHostsManager = knownHostsManager,
+                )
 
-                                // Check for existing partial file for resume support.
-                                val resumeOffset = if (file.exists()) file.length() else 0L
-                                val flow = if (resumeOffset > 0L) {
-                                    scpClient.downloadResumable(
-                                        sshClient, params.job.remotePath, file, resumeOffset
-                                    )
-                                } else {
-                                    scpClient.download(sshClient, params.job.remotePath, file)
-                                }
-
-                                flow.collect { progress ->
+                try {
+                    when (params.job.direction) {
+                        TransferDirection.UPLOAD -> {
+                            val uploadSource = resolveUploadSource(params.job.localPath)
+                            scpClient.upload(sshClient, uploadSource, params.job.remotePath)
+                                .collect { progress ->
                                     bytesTransferred = progress.bytesTransferred
                                     progressHolder.updateProgress(jobId, progress)
                                     updateNotification(jobId, progress)
                                 }
+                        }
 
-                                // If download target was a temp file, copy to SAF destination.
-                                if (temp != null) {
-                                    copySafDownload(params.job.localPath, remoteFileName, temp)
-                                }
+                        TransferDirection.DOWNLOAD -> {
+                            val remoteSize = sftpClient.getFileSize(sshClient, params.job.remotePath)
+                            downloadTarget = resolveDownloadTarget(
+                                localPath = params.job.localPath,
+                                remotePath = params.job.remotePath,
+                                remoteFileName = remoteFileName,
+                            )
+
+                            val resumeOffset = prepareResumeOffset(
+                                workingFile = downloadTarget!!.workingFile,
+                                remoteSizeBytes = remoteSize,
+                            )
+
+                            val flow = if (resumeOffset > 0L) {
+                                scpClient.downloadResumable(
+                                    sshClient = sshClient,
+                                    remotePath = params.job.remotePath,
+                                    localFile = downloadTarget!!.workingFile,
+                                    resumeOffset = resumeOffset,
+                                )
+                            } else {
+                                scpClient.download(
+                                    sshClient = sshClient,
+                                    remotePath = params.job.remotePath,
+                                    localFile = downloadTarget!!.workingFile,
+                                )
+                            }
+
+                            flow.collect { progress ->
+                                bytesTransferred = progress.bytesTransferred
+                                progressHolder.updateProgress(jobId, progress)
+                                updateNotification(jobId, progress)
+                            }
+
+                            if (downloadTarget!!.isSafBacked) {
+                                safFinalizationAttempted = true
+                                copySafDownload(
+                                    destinationUri = downloadTarget!!.safDestinationUri!!,
+                                    remoteFileName = remoteFileName,
+                                    tempFile = downloadTarget!!.workingFile,
+                                )
+                                safFinalizationSucceeded = true
+                            }
+
+                            if (remoteSize != null) {
+                                bytesTransferred = maxOf(bytesTransferred, remoteSize)
                             }
                         }
-                    } finally {
-                        runCatching { sshClient.close() }
                     }
-                }
-            } catch (e: CancellationException) {
-                finalStatus = TransferStatus.CANCELLED
-                progressHolder.updateJobStatus(jobId, TransferStatus.CANCELLED)
-                throw e
-            } catch (e: TransferError) {
-                finalStatus = TransferStatus.FAILED
-                errorMsg = e.message ?: "Transfer failed"
-                progressHolder.setJobFailed(jobId, errorMsg!!)
-            } catch (e: Exception) {
-                finalStatus = TransferStatus.FAILED
-                errorMsg = ErrorMapper.mapException(e).message ?: "Transfer failed"
-                progressHolder.setJobFailed(jobId, errorMsg!!)
-            } finally {
-                withContext(NonCancellable) {
-                    uploadTempFile?.delete()
-                    downloadTempFile?.delete()
-
-                    if (finalStatus == TransferStatus.COMPLETED) {
-                        progressHolder.updateJobStatus(jobId, TransferStatus.COMPLETED)
+                } finally {
+                    try {
+                        sshClient.close()
+                    } catch (e: Exception) {
+                        Log.d(TAG, "Failed to close SSH client cleanly", e)
                     }
-
-                    recordHistory(params, finalStatus, bytesTransferred, errorMsg)
-                    progressHolder.clearPersistedJob(jobId)
-
-                    val remoteFileName = params.job.remotePath.substringAfterLast('/')
-                    val nm = getSystemService(NotificationManager::class.java)
-                    when (finalStatus) {
-                        TransferStatus.COMPLETED ->
-                            nm.notify(
-                                jobId.hashCode(),
-                                notificationHelper.createSuccessNotification(remoteFileName, bytesTransferred, TRANSFER_CHANNEL_ID)
-                            )
-                        TransferStatus.FAILED ->
-                            nm.notify(
-                                jobId.hashCode(),
-                                notificationHelper.createFailureNotification(remoteFileName, errorMsg ?: "Unknown error", TRANSFER_CHANNEL_ID)
-                            )
-                        else -> {}
-                    }
-
-                    runningJobIds.remove(jobId)
-                    jobCoroutines.remove(jobId)
-                    checkAndStopIfEmpty()
                 }
             }
-        }
+        } catch (e: CancellationException) {
+            finalStatus = TransferStatus.CANCELLED
+            progressHolder.updateJobStatus(jobId, TransferStatus.CANCELLED)
+            throw e
+        } catch (e: TransferError) {
+            finalStatus = TransferStatus.FAILED
+            errorMsg = e.message ?: "Transfer failed"
+            progressHolder.setJobFailed(jobId, errorMsg!!)
+        } catch (e: Exception) {
+            finalStatus = TransferStatus.FAILED
+            errorMsg = ErrorMapper.mapException(e).message ?: "Transfer failed"
+            progressHolder.setJobFailed(jobId, errorMsg!!)
+        } finally {
+            withContext(NonCancellable) {
+                if (shouldDeleteWorkingFile(downloadTarget, finalStatus, safFinalizationAttempted, safFinalizationSucceeded)) {
+                    downloadTarget?.workingFile?.delete()
+                }
 
-        jobCoroutines[jobId] = coroutineJob
+                if (finalStatus == TransferStatus.COMPLETED) {
+                    progressHolder.updateJobStatus(jobId, TransferStatus.COMPLETED)
+                }
+
+                recordHistory(params, finalStatus, bytesTransferred, errorMsg)
+                progressHolder.clearPersistedJob(jobId)
+
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                when (finalStatus) {
+                    TransferStatus.COMPLETED -> notificationManager.notify(
+                        jobId.hashCode(),
+                        notificationHelper.createSuccessNotification(remoteFileName, bytesTransferred, TRANSFER_CHANNEL_ID),
+                    )
+
+                    TransferStatus.FAILED -> notificationManager.notify(
+                        jobId.hashCode(),
+                        notificationHelper.createFailureNotification(remoteFileName, errorMsg ?: "Unknown error", TRANSFER_CHANNEL_ID),
+                    )
+
+                    else -> Unit
+                }
+
+                runningJobIds.remove(jobId)
+                jobCoroutines.remove(jobId)
+                checkAndStopIfEmpty()
+            }
+        }
     }
 
     /**
-     * Resolves an upload source path to a [File], copying from a SAF [Uri] to a
-     * temporary cache file when necessary.
+     * Resolves an upload source path to a [LocalSourceFile].
      *
-     * @param localPath Either a SAF `content://` URI string or a file-system path.
-     * @param jobId Used to name the temp file uniquely.
-     * @return Pair of (file to upload, temp file to delete after upload or null).
+     * For SAF-backed `content://` URIs this returns a streaming source so uploads no
+     * longer require a full temporary copy in app cache.
      */
-    private fun resolveUploadFile(localPath: String, jobId: String): Pair<File, File?> {
-        return if (localPath.startsWith("content://")) {
-            val uri = Uri.parse(localPath)
-            val fileName = getFileNameFromUri(uri)
-            val temp = File(cacheDir, "upload_${jobId}_$fileName")
-            contentResolver.openInputStream(uri)?.use { input ->
-                temp.outputStream().use { output -> input.copyTo(output) }
-            }
-            Pair(temp, temp)
-        } else {
-            Pair(File(localPath), null)
+    private fun resolveUploadSource(localPath: String): LocalSourceFile {
+        if (!localPath.startsWith("content://")) {
+            return FileSystemFile(File(localPath))
         }
+
+        val uri = Uri.parse(localPath)
+        val fileName = getFileNameFromUri(uri)
+        val fileSize = getFileSizeFromUri(uri)
+            ?: throw IOException("Unable to determine the selected file size")
+
+        return StreamSourceFile(
+            sourceName = fileName,
+            sourceLength = fileSize,
+            openStream = {
+                contentResolver.openInputStream(uri)
+                    ?: throw IOException("Unable to open the selected file")
+            },
+        )
     }
 
     /**
      * Resolves a download destination path.
-     * - SAF tree URI → download to a temp file (caller must copy to SAF afterwards).
-     * - File-system path → download directly (appends [remoteFileName] if path is a directory).
-     *
-     * @param localPath Either a SAF `content://` URI string or a directory/file path.
-     * @param remoteFileName Name of the remote file being downloaded.
-     * @param jobId Used to name the temp file uniquely.
-     * @return Pair of (destination file, temp file to delete or null).
+     * - SAF tree URI -> download to a stable temp file so retries can resume.
+     * - File-system path -> download directly (appends [remoteFileName] if path is a directory).
      */
-    private fun resolveDownloadFile(
+    private fun resolveDownloadTarget(
         localPath: String,
+        remotePath: String,
         remoteFileName: String,
-        jobId: String,
-    ): Pair<File, File?> {
+    ): DownloadTarget {
         return if (localPath.startsWith("content://")) {
-            val temp = File(cacheDir, "download_${jobId}_$remoteFileName")
-            Pair(temp, temp)
+            DownloadTarget(
+                workingFile = buildStableSafTempFile(cacheDir, localPath, remotePath, remoteFileName),
+                safDestinationUri = localPath,
+            )
         } else {
-            val dest = File(localPath).let {
+            val destination = File(localPath).let {
                 if (it.isDirectory) File(it, remoteFileName) else it
             }
-            Pair(dest, null)
+            DownloadTarget(workingFile = destination)
         }
     }
 
@@ -290,31 +340,55 @@ class TransferForegroundService : LifecycleService() {
      * Copies [tempFile] into the SAF tree at [destinationUri], creating a new document
      * named [remoteFileName] inside the tree.
      */
-    private fun copySafDownload(destinationUri: String, remoteFileName: String, tempFile: File) {
+    private fun copySafDownload(
+        destinationUri: String,
+        remoteFileName: String,
+        tempFile: File,
+    ) {
         val treeUri = Uri.parse(destinationUri)
-        val docUri = DocumentsContract.buildDocumentUriUsingTree(
+        val documentUri = DocumentsContract.buildDocumentUriUsingTree(
             treeUri,
             DocumentsContract.getTreeDocumentId(treeUri),
         )
-        val newDocUri = DocumentsContract.createDocument(
+        val newDocumentUri = DocumentsContract.createDocument(
             contentResolver,
-            docUri,
+            documentUri,
             "application/octet-stream",
             remoteFileName,
-        ) ?: return
+        ) ?: throw IOException("Unable to create destination document")
+
         tempFile.inputStream().use { input ->
-            contentResolver.openOutputStream(newDocUri)?.use { output ->
-                input.copyTo(output)
-            }
+            val output = contentResolver.openOutputStream(newDocumentUri)
+                ?: throw IOException("Unable to open destination document")
+            output.use { input.copyTo(it) }
         }
     }
 
     /** Returns the display name for a SAF [Uri], or a fallback based on the URI path. */
     private fun getFileNameFromUri(uri: Uri): String =
         contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && idx >= 0) cursor.getString(idx) else null
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && index >= 0) cursor.getString(index) else null
         } ?: uri.lastPathSegment ?: "upload"
+
+    /** Returns the best available size for a SAF [Uri], or null if the provider omits it. */
+    private fun getFileSizeFromUri(uri: Uri): Long? {
+        val queriedSize = contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (cursor.moveToFirst() && index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else null
+        }
+        if (queriedSize != null && queriedSize >= 0L) return queriedSize
+
+        val descriptorLength = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+        return descriptorLength?.takeIf { it >= 0L }
+    }
+
+    private fun ensureForegroundStarted() {
+        startForeground(
+            FOREGROUND_NOTIFICATION_ID,
+            notificationHelper.createQueueNotification(TRANSFER_CHANNEL_ID),
+        )
+    }
 
     private fun updateNotification(jobId: String, progress: TransferProgress) {
         val notification = notificationHelper.createProgressNotification(
@@ -339,7 +413,8 @@ class TransferForegroundService : LifecycleService() {
         }
         val remoteFileName = params.job.remotePath.substringAfterLast('/')
         val remoteDir = params.job.remotePath.substringBeforeLast('/', "")
-        runCatching {
+
+        try {
             historyRepository.insert(
                 TransferHistoryEntry(
                     id = UUID.randomUUID().toString(),
@@ -352,13 +427,15 @@ class TransferForegroundService : LifecycleService() {
                     fileSizeBytes = bytesTransferred,
                     status = historyStatus,
                     errorMessage = errorMsg,
-                )
+                ),
             )
+        } catch (e: Exception) {
+            Log.d(TAG, "Failed to record transfer history", e)
         }
     }
 
     private fun checkAndStopIfEmpty() {
-        if (runningJobIds.isEmpty()) {
+        if (runningJobIds.isEmpty() && !progressHolder.hasPendingJobs() && queueWorkerJob?.isActive != true) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
@@ -368,7 +445,7 @@ class TransferForegroundService : LifecycleService() {
         val channel = NotificationChannel(
             TRANSFER_CHANNEL_ID,
             getString(dev.nettools.android.R.string.transfer_channel_name),
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_LOW,
         ).apply {
             description = getString(dev.nettools.android.R.string.transfer_channel_desc)
         }

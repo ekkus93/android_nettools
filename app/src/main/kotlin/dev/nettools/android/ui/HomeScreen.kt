@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
@@ -53,7 +53,7 @@ fun HomeScreen(navController: NavController) {
             NavCard(
                 title = "SCP Transfer",
                 subtitle = "Upload or download files over SSH",
-                icon = { Icon(Icons.Filled.CompareArrows, contentDescription = null, Modifier.size(36.dp)) },
+                icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null, Modifier.size(36.dp)) },
                 onClick = { navController.navigate(Routes.TRANSFER) },
             )
             NavCard(

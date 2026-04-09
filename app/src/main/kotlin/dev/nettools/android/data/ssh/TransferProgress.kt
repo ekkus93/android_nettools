@@ -14,5 +14,6 @@ data class TransferProgress(
     val bytesTransferred: Long,
     val totalBytes: Long,
     val speedBytesPerSec: Double,
-    val isResuming: Boolean = false
+    val isResuming: Boolean = false,
+    val resumeOffsetBytes: Long = 0L,
 )

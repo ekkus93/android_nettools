@@ -160,6 +160,34 @@ class ScpClientIntegrationTest {
     }
 
     @Test
+    fun `downloadResumable - emits progress for resumed bytes`() = runTest {
+        val fullContent = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toByteArray()
+        serverRoot.resolve("resume_progress.txt").toFile().writeBytes(fullContent)
+
+        val resumeOffset = 10L
+        val partialFile = File(clientDir.toFile(), "resume_progress.txt").apply {
+            writeBytes(fullContent.copyOf(resumeOffset.toInt()))
+        }
+
+        val sshClient = openSshClient()
+        try {
+            val progress = scpClient.downloadResumable(
+                sshClient,
+                "/resume_progress.txt",
+                partialFile,
+                resumeOffset,
+            ).toList()
+
+            assertTrue(progress.isNotEmpty(), "Expected resumed transfer to emit progress")
+            assertTrue(progress.first().isResuming, "Expected resumed transfer marker")
+            assertEquals(resumeOffset, progress.first().resumeOffsetBytes)
+            assertEquals(fullContent.size.toLong(), progress.last().bytesTransferred)
+        } finally {
+            sshClient.close()
+        }
+    }
+
+    @Test
     fun `downloadResumable - works from zero offset (full download via SFTP)`() = runTest {
         val content = "SFTP full download".toByteArray()
         serverRoot.resolve("sftp_full.txt").toFile().writeBytes(content)

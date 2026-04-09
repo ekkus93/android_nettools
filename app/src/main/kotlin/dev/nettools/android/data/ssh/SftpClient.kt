@@ -4,6 +4,7 @@ import dev.nettools.android.domain.model.RemoteFileEntry
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.FileMode
+import net.schmizz.sshj.sftp.SFTPClient
 import javax.inject.Inject
 
 /**
@@ -81,14 +82,14 @@ class SftpClient @Inject constructor() {
     }
 
     /**
-     * Deletes a remote file.
+     * Deletes a remote file or directory recursively.
      *
      * @param sshClient An authenticated [SSHClient].
      * @param path Absolute remote path to delete.
      */
     suspend fun delete(sshClient: SSHClient, path: String) {
         sshClient.newSFTPClient().use { sftp ->
-            sftp.rm(path)
+            deleteRecursively(sftp, path)
         }
     }
 
@@ -105,4 +106,21 @@ class SftpClient @Inject constructor() {
                 sftp.stat(path).size
             }
         }.getOrNull()
+
+    private fun deleteRecursively(sftp: SFTPClient, path: String) {
+        when (sftp.type(path)) {
+            FileMode.Type.DIRECTORY -> {
+                sftp.ls(path)
+                    .filter { it.name != "." && it.name != ".." }
+                    .forEach { child ->
+                        deleteRecursively(sftp, joinRemotePath(path, child.name))
+                    }
+                sftp.rmdir(path)
+            }
+            else -> sftp.rm(path)
+        }
+    }
+
+    private fun joinRemotePath(parent: String, child: String): String =
+        if (parent == "/") "/$child" else "$parent/$child"
 }

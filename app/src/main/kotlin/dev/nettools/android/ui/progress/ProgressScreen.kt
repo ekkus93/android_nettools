@@ -148,7 +148,7 @@ private fun TransferCard(
 
                 if (progress.isResuming) {
                     Text(
-                        text = "Resuming from ${progress.bytesTransferred.toFormattedSize()}",
+                        text = "Resuming from ${progress.resumeOffsetBytes.toFormattedSize()}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
