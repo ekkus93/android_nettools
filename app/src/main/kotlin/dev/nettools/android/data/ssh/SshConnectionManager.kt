@@ -5,7 +5,11 @@ import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.data.security.KnownHostsManager.VerificationResult
 import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.model.TransferError
+import net.schmizz.sshj.DefaultConfig
 import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.common.Factory
+import net.schmizz.sshj.common.SecurityUtils
+import net.schmizz.sshj.transport.kex.KeyExchange
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -22,6 +26,7 @@ class SshConnectionManager @Inject constructor() {
     companion object {
         private const val CONNECT_TIMEOUT_MS = 30_000
         private const val TAG = "SshConnectionManager"
+        private const val CURVE_25519_PREFIX = "curve25519"
     }
 
     /**
@@ -36,7 +41,7 @@ class SshConnectionManager @Inject constructor() {
      */
     fun peekHostKey(host: String, port: Int): String? {
         var captured: String? = null
-        val client = SSHClient()
+        val client = createClient()
         client.connectTimeout = CONNECT_TIMEOUT_MS
         client.addHostKeyVerifier(object : HostKeyVerifier {
             override fun verify(hostname: String, portNumber: Int, key: PublicKey): Boolean {
@@ -82,7 +87,7 @@ class SshConnectionManager @Inject constructor() {
         keyPath: String? = null,
         knownHostsManager: KnownHostsManager
     ): SSHClient {
-        val client = SSHClient()
+        val client = createClient()
         client.connectTimeout = CONNECT_TIMEOUT_MS
         client.addHostKeyVerifier(buildHostKeyVerifier(host = host, port = port, knownHostsManager = knownHostsManager))
 
@@ -145,4 +150,24 @@ class SshConnectionManager @Inject constructor() {
         override fun findExistingAlgorithms(hostname: String, portNumber: Int): List<String> =
             emptyList()
     }
+
+    /**
+     * Creates an SSHJ client configured to use the platform crypto provider and removes
+     * Curve25519 key exchanges, which depend on X25519 support not provided on this device.
+     */
+    private fun createClient(): SSHClient {
+        SecurityUtils.setRegisterBouncyCastle(false)
+        SecurityUtils.setSecurityProvider(null)
+
+        val config = DefaultConfig()
+        config.setKeyExchangeFactories(filterUnsupportedKeyExchangeFactories(config.getKeyExchangeFactories()))
+        return SSHClient(config)
+    }
+
+    internal fun filterUnsupportedKeyExchangeFactories(
+        factories: List<Factory.Named<KeyExchange>>
+    ): List<Factory.Named<KeyExchange>> =
+        factories.filterNot { factory ->
+            factory.getName().startsWith(CURVE_25519_PREFIX, ignoreCase = true)
+        }
 }

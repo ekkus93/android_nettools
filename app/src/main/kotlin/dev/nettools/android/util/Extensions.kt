@@ -1,5 +1,7 @@
 package dev.nettools.android.util
 
+import java.net.URLDecoder
+
 /**
  * Formats a byte count as a human-readable size string (e.g. "1.2 MB", "345 KB").
  */
@@ -46,3 +48,39 @@ fun Long.toEtaString(speedBytesPerSec: Double): String {
  * @return The literal string "[REDACTED]".
  */
 fun String.sanitizeForLog(): String = "[REDACTED]"
+
+/**
+ * Formats a local path or SAF `content://` URI into a human-readable label for the UI.
+ *
+ * Examples:
+ * - `/storage/emulated/0/Download/file.txt` -> unchanged
+ * - `content://.../document/primary%3ADownload%2Fgiphy.gif` -> `Download/giphy.gif`
+ * - `content://.../tree/primary%3ADownload%2FTransfer` -> `Download/Transfer`
+ */
+fun String.toDisplayPath(): String {
+    if (!startsWith("content://")) return this
+
+    val encodedDocumentId = sequenceOf("/document/", "/tree/")
+        .mapNotNull { marker ->
+            substringAfter(marker, missingDelimiterValue = "")
+                .takeIf { it.isNotBlank() }
+                ?.substringBefore('/')
+        }
+        .firstOrNull()
+        ?: return decodeSafSegment(substringAfterLast('/'))
+
+    return formatDocumentId(decodeSafSegment(encodedDocumentId))
+}
+
+private fun decodeSafSegment(value: String): String =
+    URLDecoder.decode(value, "UTF-8")
+
+private fun formatDocumentId(documentId: String): String {
+    val volumePrefix = documentId.substringBefore(':', missingDelimiterValue = "")
+    val relativePath = documentId.substringAfter(':', missingDelimiterValue = documentId).trim('/')
+    return when {
+        relativePath.isNotBlank() -> relativePath
+        volumePrefix.isNotBlank() -> volumePrefix
+        else -> documentId.substringAfterLast('/')
+    }
+}

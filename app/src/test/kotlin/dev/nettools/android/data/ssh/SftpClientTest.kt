@@ -30,6 +30,18 @@ class SftpClientTest {
         every { it.newSFTPClient() } returns sftp
     }
 
+    private fun stubCanonicalize(sftp: SFTPClient, homeDir: String = "/home/user") {
+        every { sftp.canonicalize(".") } returns homeDir
+        every { sftp.canonicalize(any()) } answers {
+            val path = firstArg<String>()
+            when {
+                path == "." -> homeDir
+                path.startsWith("/") -> path
+                else -> throw RuntimeException("Cannot canonicalize $path")
+            }
+        }
+    }
+
     private fun makeResourceInfo(
         name: String,
         size: Long,
@@ -54,6 +66,7 @@ class SftpClientTest {
     fun `listDirectory - maps file entries to domain model`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         every { sftp.ls("/home/user") } returns listOf(
             makeResourceInfo("file.txt", 1024L, isDir = false, mtime = 1_000L),
@@ -80,6 +93,7 @@ class SftpClientTest {
     fun `listDirectory - closes SFTP client after listing`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp, homeDir = "/")
         every { sftp.ls(any<String>()) } returns emptyList()
 
         sftpClient.listDirectory(sshClient, "/")
@@ -91,6 +105,7 @@ class SftpClientTest {
     fun `listDirectory - returns empty list for empty directory`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
         every { sftp.ls(any<String>()) } returns emptyList()
 
         val entries = sftpClient.listDirectory(sshClient, "/empty")
@@ -105,6 +120,7 @@ class SftpClientTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
         val attrs = mockk<FileAttributes>()
+        stubCanonicalize(sftp)
 
         every { attrs.size } returns 512L
         every { attrs.permissions } returns null
@@ -124,6 +140,7 @@ class SftpClientTest {
     fun `stat - returns null when SFTP throws`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
         every { sftp.stat(any<String>()) } throws RuntimeException("File not found")
 
         val entry = sftpClient.stat(sshClient, "/nonexistent")
@@ -137,6 +154,7 @@ class SftpClientTest {
     fun `mkdir - delegates to SFTP mkdir and closes client`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         sftpClient.mkdir(sshClient, "/new/dir")
 
@@ -150,6 +168,7 @@ class SftpClientTest {
     fun `rename - delegates to SFTP rename and closes client`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         sftpClient.rename(sshClient, "/old/path", "/new/path")
 
@@ -163,6 +182,7 @@ class SftpClientTest {
     fun `delete - delegates to SFTP rm and closes client`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         every { sftp.type("/path/to/remove.txt") } returns FileMode.Type.REGULAR
 
@@ -176,6 +196,7 @@ class SftpClientTest {
     fun `delete - removes empty directory with rmdir`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         every { sftp.type("/empty-dir") } returns FileMode.Type.DIRECTORY
         every { sftp.ls("/empty-dir") } returns emptyList()
@@ -190,6 +211,7 @@ class SftpClientTest {
     fun `delete - removes non-empty directories recursively`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
 
         every { sftp.type("/dir") } returns FileMode.Type.DIRECTORY
         every { sftp.type("/dir/nested.txt") } returns FileMode.Type.REGULAR
@@ -212,6 +234,7 @@ class SftpClientTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
         val attrs = mockk<FileAttributes>()
+        stubCanonicalize(sftp)
 
         every { attrs.size } returns 2048L
         every { sftp.stat(any<String>()) } returns attrs
@@ -225,10 +248,48 @@ class SftpClientTest {
     fun `getFileSize - returns null when stat throws`() = runTest {
         val sftp = mockk<SFTPClient>(relaxed = true)
         val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp)
         every { sftp.stat(any<String>()) } throws RuntimeException("No such file")
 
         val size = sftpClient.getFileSize(sshClient, "/missing.bin")
 
         assertNull(size)
+    }
+
+    @Test
+    fun `resolvePath - expands home-relative paths`() = runTest {
+        val sftp = mockk<SFTPClient>(relaxed = true)
+        val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp, homeDir = "/home/phil")
+
+        val home = sftpClient.resolvePath(sshClient, "~")
+        val child = sftpClient.resolvePath(sshClient, "~/downloads")
+
+        assertEquals("/home/phil", home)
+        assertEquals("/home/phil/downloads", child)
+    }
+
+    @Test
+    fun `resolveUploadDestination - appends file name for remote directory`() = runTest {
+        val sftp = mockk<SFTPClient>(relaxed = true)
+        val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp, homeDir = "/home/phil")
+        every { sftp.type("/home/phil") } returns FileMode.Type.DIRECTORY
+
+        val path = sftpClient.resolveUploadDestination(sshClient, "/home/phil", "report.txt")
+
+        assertEquals("/home/phil/report.txt", path)
+    }
+
+    @Test
+    fun `resolveUploadDestination - keeps explicit file path`() = runTest {
+        val sftp = mockk<SFTPClient>(relaxed = true)
+        val sshClient = makeSSH(sftp)
+        stubCanonicalize(sftp, homeDir = "/home/phil")
+        every { sftp.type("/home/phil/report.txt") } returns FileMode.Type.REGULAR
+
+        val path = sftpClient.resolveUploadDestination(sshClient, "/home/phil/report.txt", "ignored.txt")
+
+        assertEquals("/home/phil/report.txt", path)
     }
 }

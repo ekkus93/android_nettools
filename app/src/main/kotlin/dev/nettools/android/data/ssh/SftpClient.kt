@@ -14,6 +14,17 @@ import javax.inject.Inject
 class SftpClient @Inject constructor() {
 
     /**
+     * Resolves [path] to a canonical remote path.
+     *
+     * `~` and `~/...` are expanded relative to the authenticated user's home directory because
+     * SFTP paths are not shell-expanded by the server.
+     */
+    suspend fun resolvePath(sshClient: SSHClient, path: String): String =
+        sshClient.newSFTPClient().use { sftp ->
+            resolvePathInternal(sftp, path)
+        }
+
+    /**
      * Lists the contents of a remote directory.
      *
      * @param sshClient An authenticated [SSHClient].
@@ -22,16 +33,19 @@ class SftpClient @Inject constructor() {
      */
     suspend fun listDirectory(sshClient: SSHClient, path: String): List<RemoteFileEntry> =
         sshClient.newSFTPClient().use { sftp ->
-            sftp.ls(path).map { entry ->
+            val resolvedPath = resolvePathInternal(sftp, path)
+            sftp.ls(resolvedPath)
+                .filter { it.name != "." && it.name != ".." }
+                .map { entry ->
                 RemoteFileEntry(
                     name = entry.name,
-                    path = "$path/${entry.name}",
+                    path = joinRemotePath(resolvedPath, entry.name),
                     sizeBytes = entry.attributes.size,
                     permissions = entry.attributes.permissions?.toString() ?: "",
                     isDirectory = entry.attributes.type == FileMode.Type.DIRECTORY,
                     modifiedAt = entry.attributes.mtime
                 )
-            }
+                }
         }
 
     /**
@@ -44,10 +58,11 @@ class SftpClient @Inject constructor() {
     suspend fun stat(sshClient: SSHClient, path: String): RemoteFileEntry? =
         runCatching {
             sshClient.newSFTPClient().use { sftp ->
-                val attrs: FileAttributes = sftp.stat(path)
+                val resolvedPath = resolvePathInternal(sftp, path)
+                val attrs: FileAttributes = sftp.stat(resolvedPath)
                 RemoteFileEntry(
-                    name = path.substringAfterLast('/'),
-                    path = path,
+                    name = resolvedPath.substringAfterLast('/'),
+                    path = resolvedPath,
                     sizeBytes = attrs.size,
                     permissions = attrs.permissions?.toString() ?: "",
                     isDirectory = attrs.type == FileMode.Type.DIRECTORY,
@@ -64,7 +79,7 @@ class SftpClient @Inject constructor() {
      */
     suspend fun mkdir(sshClient: SSHClient, path: String) {
         sshClient.newSFTPClient().use { sftp ->
-            sftp.mkdir(path)
+            sftp.mkdir(resolvePathInternal(sftp, path))
         }
     }
 
@@ -77,7 +92,7 @@ class SftpClient @Inject constructor() {
      */
     suspend fun rename(sshClient: SSHClient, fromPath: String, toPath: String) {
         sshClient.newSFTPClient().use { sftp ->
-            sftp.rename(fromPath, toPath)
+            sftp.rename(resolvePathInternal(sftp, fromPath), resolvePathInternal(sftp, toPath))
         }
     }
 
@@ -89,7 +104,7 @@ class SftpClient @Inject constructor() {
      */
     suspend fun delete(sshClient: SSHClient, path: String) {
         sshClient.newSFTPClient().use { sftp ->
-            deleteRecursively(sftp, path)
+            deleteRecursively(sftp, resolvePathInternal(sftp, path))
         }
     }
 
@@ -103,9 +118,33 @@ class SftpClient @Inject constructor() {
     suspend fun getFileSize(sshClient: SSHClient, path: String): Long? =
         runCatching {
             sshClient.newSFTPClient().use { sftp ->
-                sftp.stat(path).size
+                sftp.stat(resolvePathInternal(sftp, path)).size
             }
         }.getOrNull()
+
+    /**
+     * Resolves the effective upload destination path.
+     *
+     * If [remotePath] names an existing directory, [fileName] is appended so uploads behave like
+     * a file picker targeting that folder. Otherwise [remotePath] is treated as the full file path.
+     */
+    suspend fun resolveUploadDestination(
+        sshClient: SSHClient,
+        remotePath: String,
+        fileName: String,
+    ): String = sshClient.newSFTPClient().use { sftp ->
+        val resolvedPath = resolvePathInternal(sftp, remotePath)
+        if (resolvedPath.endsWith("/")) {
+            return@use joinRemotePath(resolvedPath.removeSuffix("/").ifBlank { "/" }, fileName)
+        }
+
+        val remoteType = runCatching { sftp.type(resolvedPath) }.getOrNull()
+        if (remoteType == FileMode.Type.DIRECTORY) {
+            joinRemotePath(resolvedPath, fileName)
+        } else {
+            resolvedPath
+        }
+    }
 
     private fun deleteRecursively(sftp: SFTPClient, path: String) {
         when (sftp.type(path)) {
@@ -121,6 +160,17 @@ class SftpClient @Inject constructor() {
         }
     }
 
+    private fun resolvePathInternal(sftp: SFTPClient, path: String): String {
+        val trimmed = path.trim()
+        val homeDirectory = sftp.canonicalize(".")
+        return when {
+            trimmed.isBlank() || trimmed == "~" -> homeDirectory
+            trimmed == "." -> homeDirectory
+            trimmed.startsWith("~/") -> joinRemotePath(homeDirectory, trimmed.removePrefix("~/"))
+            else -> runCatching { sftp.canonicalize(trimmed) }.getOrElse { trimmed }
+        }
+    }
+
     private fun joinRemotePath(parent: String, child: String): String =
-        if (parent == "/") "/$child" else "$parent/$child"
+        if (parent == "/") "/$child" else "${parent.removeSuffix("/")}/$child"
 }

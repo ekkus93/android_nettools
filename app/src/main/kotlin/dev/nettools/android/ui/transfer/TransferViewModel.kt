@@ -19,9 +19,11 @@ import dev.nettools.android.domain.model.TransferStatus
 import dev.nettools.android.domain.repository.ConnectionProfileRepository
 import dev.nettools.android.domain.repository.TransferHistoryRepository
 import dev.nettools.android.service.PendingTransferParams
+import dev.nettools.android.service.RemotePickerMode
 import dev.nettools.android.service.SftpConnectionParams
 import dev.nettools.android.service.TransferForegroundService
 import dev.nettools.android.service.TransferProgressHolder
+import dev.nettools.android.util.toDisplayPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +73,7 @@ data class TransferUiState(
     // Transfer fields
     val direction: TransferDirection = TransferDirection.UPLOAD,
     val localPath: String = "",
+    val localPathDisplay: String = "",
     val remotePath: String = "",
     // Save profile
     val saveProfile: Boolean = false,
@@ -149,7 +152,13 @@ class TransferViewModel @Inject constructor(
     /** Switches the transfer direction. */
     fun onDirectionChange(v: TransferDirection) = _uiState.update { it.copy(direction = v) }
     /** Updates the local path and clears any existing error. */
-    fun onLocalPathChange(v: String) = _uiState.update { it.copy(localPath = v, localPathError = null) }
+    fun onLocalPathChange(v: String) = _uiState.update {
+        it.copy(localPath = v, localPathDisplay = v, localPathError = null)
+    }
+    /** Updates the local path from a picker result while keeping a friendly display label. */
+    fun onLocalPathPicked(v: String) = _uiState.update {
+        it.copy(localPath = v, localPathDisplay = v.toDisplayPath(), localPathError = null)
+    }
     /** Updates the remote path and clears any existing error. */
     fun onRemotePathChange(v: String) = _uiState.update { it.copy(remotePath = v, remotePathError = null) }
     /** Toggles whether to persist the connection as a saved profile. */
@@ -307,6 +316,10 @@ class TransferViewModel @Inject constructor(
             authType = state.authType,
             password = state.password.ifBlank { null },
             keyPath = state.keyPath.ifBlank { null },
+            pickerMode = when (state.direction) {
+                TransferDirection.UPLOAD -> RemotePickerMode.PICK_DIRECTORY
+                TransferDirection.DOWNLOAD -> RemotePickerMode.PICK_FILE
+            },
         )
     }
 

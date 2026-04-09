@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import dev.nettools.android.data.ssh.TransferProgress
 import dev.nettools.android.domain.model.TransferJob
 import dev.nettools.android.domain.model.TransferStatus
+import dev.nettools.android.util.toDisplayPath
 import dev.nettools.android.util.toEtaString
 import dev.nettools.android.util.toFormattedSize
 import dev.nettools.android.util.toSpeedString
@@ -114,6 +115,11 @@ private fun TransferCard(
     isPrimary: Boolean,
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
+    val canCancel = job.status in setOf(
+        TransferStatus.QUEUED,
+        TransferStatus.IN_PROGRESS,
+        TransferStatus.PAUSED,
+    )
 
     val containerColor = if (isPrimary)
         MaterialTheme.colorScheme.primaryContainer
@@ -131,15 +137,17 @@ private fun TransferCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = progress?.fileName ?: job.localPath.substringAfterLast('/'),
+                    text = progress?.fileName ?: job.localPath.toDisplayPath().substringAfterLast('/'),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = { showCancelDialog = true }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Cancel transfer")
+                if (canCancel) {
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { showCancelDialog = true }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Cancel transfer")
+                    }
                 }
             }
 
@@ -204,7 +212,7 @@ private fun TransferCard(
         }
     }
 
-    if (showCancelDialog) {
+    if (showCancelDialog && canCancel) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
             title = { Text("Cancel transfer?") },

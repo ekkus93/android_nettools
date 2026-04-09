@@ -48,7 +48,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -112,14 +111,14 @@ fun TransferScreen(
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri: Uri? ->
-        uri?.let { viewModel.onLocalPathChange(it.toString()) }
+        uri?.let { viewModel.onLocalPathPicked(it.toString()) }
     }
 
     // Directory picker for local download destination
     val dirPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri: Uri? ->
-        uri?.let { viewModel.onLocalPathChange(it.toString()) }
+        uri?.let { viewModel.onLocalPathPicked(it.toString()) }
     }
 
     Scaffold(
@@ -280,7 +279,7 @@ fun TransferScreen(
 
             // ── Local path ────────────────────────────────────────────────────
             OutlinedTextField(
-                value = state.localPath,
+                value = state.localPathDisplay,
                 onValueChange = viewModel::onLocalPathChange,
                 label = { Text(if (state.direction == TransferDirection.UPLOAD) "Local file" else "Download to") },
                 isError = state.localPathError != null,

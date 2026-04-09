@@ -95,20 +95,43 @@ class ScpClientTest {
     // ── download error propagation ────────────────────────────────────────────
 
     @Test
-    fun `download - exception from SCP propagates through flow`() = runTest {
+    fun `download - exception from SFTP propagates through flow`() = runTest {
         val localFile = File(tempDir.toFile(), "out.txt")
         val sshClient = mockk<SSHClient>()
-        val scpTransfer = mockk<SCPFileTransfer>()
+        val sftpClient = mockk<SFTPClient>(relaxed = true)
 
-        every { sshClient.newSCPFileTransfer() } returns scpTransfer
-        every { scpTransfer.transferListener = any() } just Runs
-        every { scpTransfer.download(any<String>(), any<net.schmizz.sshj.xfer.LocalDestFile>()) } throws
-            RuntimeException("Permission denied")
+        every { sshClient.newSFTPClient() } returns sftpClient
+        every { sftpClient.open(any<String>()) } throws RuntimeException("Permission denied")
 
         val ex = assertThrows<RuntimeException> {
             scpClient.download(sshClient, "/remote/out.txt", localFile).toList()
         }
         assertEquals("Permission denied", ex.message)
+    }
+
+    @Test
+    fun `download - uses SFTP open with exact remote path`() = runTest {
+        val localFile = File(tempDir.toFile(), "screenshot.png")
+        val sshClient = mockk<SSHClient>()
+        val sftpClient = mockk<SFTPClient>(relaxed = true)
+        val remoteFile = mockk<RemoteFile>(relaxed = true)
+        val attrs = mockk<FileAttributes>()
+
+        every { sshClient.newSFTPClient() } returns sftpClient
+        every { sftpClient.open(any<String>()) } returns remoteFile
+        every { remoteFile.fetchAttributes() } returns attrs
+        every { attrs.size } returns 0L
+        every { remoteFile.read(any<Long>(), any(), any<Int>(), any<Int>()) } returns -1
+
+        scpClient.download(
+            sshClient,
+            "/home/phil/Pictures/Screenshots/Screenshot from 2025-10-25 14-27-03.png",
+            localFile,
+        ).toList()
+
+        verify {
+            sftpClient.open("/home/phil/Pictures/Screenshots/Screenshot from 2025-10-25 14-27-03.png")
+        }
     }
 
     // ── downloadResumable ─────────────────────────────────────────────────────

@@ -51,7 +51,6 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.SFTP_BROWSER) {
                             SftpBrowserScreen(
                                 navController = navController,
-                                pickerMode = true,
                             )
                         }
                         composable(Routes.SAVED_CONNECTIONS) {

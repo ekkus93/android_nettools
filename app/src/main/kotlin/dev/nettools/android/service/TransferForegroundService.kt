@@ -175,7 +175,12 @@ class TransferForegroundService : LifecycleService() {
                     when (params.job.direction) {
                         TransferDirection.UPLOAD -> {
                             val uploadSource = resolveUploadSource(params.job.localPath)
-                            scpClient.upload(sshClient, uploadSource, params.job.remotePath)
+                            val resolvedRemotePath = sftpClient.resolveUploadDestination(
+                                sshClient = sshClient,
+                                remotePath = params.job.remotePath,
+                                fileName = uploadSource.name,
+                            )
+                            scpClient.upload(sshClient, uploadSource, resolvedRemotePath)
                                 .collect { progress ->
                                     bytesTransferred = progress.bytesTransferred
                                     progressHolder.updateProgress(jobId, progress)
@@ -264,6 +269,7 @@ class TransferForegroundService : LifecycleService() {
 
                 recordHistory(params, finalStatus, bytesTransferred, errorMsg)
                 progressHolder.clearPersistedJob(jobId)
+                progressHolder.removeJob(jobId)
 
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 when (finalStatus) {

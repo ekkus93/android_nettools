@@ -1,5 +1,11 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-09T07:48:52Z - GPT-5.4 - Re-ran lint and tests successfully
+
+Validated the current working tree again with the standard Gradle checks used in this repo.
+
+**Verification:** `./gradlew --no-daemon --console=plain lintDebug test` passed with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
+
 ## 2026-04-09T04:32:46Z - GPT-5.4 - Implemented code review follow-up fixes
 
 **Scope:** Completed the fixes tracked in `docs/CODE_REVIEW1_TODO.md` and marked every item done.
@@ -149,3 +155,78 @@ All previously-stubbed functionality is now fully implemented:
 ### Build/test status
 `./gradlew assembleDebug` → BUILD SUCCESSFUL  
 `./gradlew test` → BUILD SUCCESSFUL (all tests pass)
+
+## 2026-04-09T06:26:00Z - GPT-5.4 - Fixed remote path resolution for browse and upload
+
+Investigated the SFTP browser showing an empty home directory and uploads failing when given `/home/phil`.
+
+### Changes made
+- **SftpClient**: added canonical remote-path resolution so SFTP uses the server's real home directory instead of literal `~`; filters `.` and `..` from listings; added upload-destination resolution that appends the local filename when the remote path is a directory
+- **SftpBrowserViewModel**: resolves the initial browser location to the canonical remote home directory and reuses that resolved home path for the Home action
+- **TransferForegroundService**: upload jobs now resolve directory targets like `/home/phil` to `/home/phil/<local filename>` before starting SCP
+- **SftpClientTest**: updated mocks for canonical-path resolution and added regression coverage for home expansion and directory upload targets
+
+### Build/test/install status
+`./gradlew --no-daemon --console=plain lintDebug test installDebug` → BUILD SUCCESSFUL  
+Installed on connected device `SM-A546E`
+
+## 2026-04-09T07:36:13Z - GPT-5.4 - Re-ran lint and unit tests
+
+### Build/test status
+`./gradlew --no-daemon --console=plain lintDebug test` → BUILD SUCCESSFUL
+
+## 2026-04-09T07:30:43Z - GPT-5.4 - Switched file downloads to SFTP to handle remote paths with spaces
+
+Diagnosed a failed download where the selected remote file name contained spaces (`Screenshot from 2025-10-25 14-27-03.png`).
+
+### Changes made
+- **Root cause**: SSHJ's SCP download path uses `NoEscape` by default, so remote paths with spaces can fail before transfer starts
+- **ScpClient**: changed regular file downloads to use the existing SFTP-based download path instead of SCP, while keeping resume support
+- **ScpClientTest**: updated download error coverage for SFTP and added a regression test that verifies remote paths with spaces are opened exactly as selected
+
+### Build/test/install status
+`./gradlew --no-daemon --console=plain clean lintDebug test installDebug` → BUILD SUCCESSFUL  
+Installed on connected device `SM-A546E`
+
+## 2026-04-09T07:45:39Z - GPT-5.4 - Fixed stale completed transfers on the progress screen
+
+Completed transfers no longer remain in the active transfer list, and terminal transfer cards no longer show a misleading cancel affordance.
+
+### Changes made
+- **TransferForegroundService**: removes finished jobs from `TransferProgressHolder` during cleanup so completed transfers disappear from the active progress list
+- **ProgressScreen**: only shows the cancel button and cancel dialog for cancellable states (`QUEUED`, `IN_PROGRESS`, `PAUSED`)
+
+### Build/test/install status
+`./gradlew --no-daemon --console=plain lintDebug test` → BUILD SUCCESSFUL  
+`./gradlew --no-daemon --console=plain installDebug` → BUILD SUCCESSFUL  
+Installed on connected device `SM-A546E`
+
+## 2026-04-09T07:14:50Z - GPT-5.4 - Fixed remote picker to allow file selection for downloads
+
+Adjusted the remote SFTP browser so download flows can pick files instead of being limited to directories.
+
+### Changes made
+- **SftpConnectionParams**: added `RemotePickerMode` so the Transfer screen can tell the SFTP browser whether it should pick a directory or a file
+- **TransferViewModel**: remote Browse now requests directory picking for uploads and file picking for downloads
+- **SftpBrowserViewModel**: stores the requested picker mode in UI state when the browser is opened
+- **SftpBrowserScreen**: replaced the old boolean picker behavior with explicit mode handling so directory taps navigate during downloads and select during uploads
+- **TransferViewModelTest**: updated the existing browse/trust-flow expectation for the new picker mode
+
+### Build/test/install status
+`./gradlew --no-daemon --console=plain clean lintDebug test installDebug` → BUILD SUCCESSFUL  
+Installed on connected device `SM_A546E`
+
+## 2026-04-09T07:01:31Z - GPT-5.4 - Made local path labels human-readable
+
+Improved the SCP transfer UI so Android Storage Access Framework URIs are no longer shown raw to the user.
+
+### Changes made
+- **Extensions**: added a pure `toDisplayPath()` formatter that turns SAF URIs like `content://.../document/primary%3ADownload%2Fgiphy.gif` into `Download/giphy.gif`
+- **TransferViewModel**: now tracks both the raw local path used for transfers and a friendly display label for the form field
+- **TransferScreen**: picker results now keep the raw URI internally while showing the formatted path in the Local file / Download to field
+- **ProgressScreen**: queued upload labels now use the formatted path so they show file names instead of raw `content://` URIs
+- **ExtensionsTest**: added regression coverage for document and tree URI formatting
+
+### Build/test/install status
+`./gradlew --no-daemon --console=plain lintDebug test installDebug` → BUILD SUCCESSFUL  
+Installed on connected device `SM-A546E`

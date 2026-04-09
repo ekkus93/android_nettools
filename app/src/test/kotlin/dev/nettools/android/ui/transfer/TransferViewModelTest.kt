@@ -8,6 +8,7 @@ import dev.nettools.android.data.ssh.SshConnectionManager
 import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.repository.ConnectionProfileRepository
 import dev.nettools.android.domain.repository.TransferHistoryRepository
+import dev.nettools.android.service.RemotePickerMode
 import dev.nettools.android.service.SftpConnectionParams
 import dev.nettools.android.service.TransferProgressHolder
 import io.mockk.every
@@ -110,6 +111,7 @@ class TransferViewModelTest {
                 authType = AuthType.PASSWORD,
                 password = "secret",
                 keyPath = null,
+                pickerMode = RemotePickerMode.PICK_DIRECTORY,
             ),
             progressHolder.pendingSftpConnectionParams,
         )

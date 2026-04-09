@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.nettools.android.domain.model.RemoteFileEntry
+import dev.nettools.android.service.RemotePickerMode
 import dev.nettools.android.util.toFormattedSize
 
 /**
@@ -63,14 +64,12 @@ import dev.nettools.android.util.toFormattedSize
  * selecting a file or directory returns its path to the previous back stack entry.
  *
  * @param navController Navigation controller for routing.
- * @param pickerMode When true, tapping an entry returns its path rather than navigating into it.
  * @param viewModel The [SftpBrowserViewModel] managing remote state.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SftpBrowserScreen(
     navController: NavController,
-    pickerMode: Boolean = false,
     viewModel: SftpBrowserViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -197,7 +196,7 @@ fun SftpBrowserScreen(
                             items(state.entries, key = { it.path }) { entry ->
                                 FileEntryRow(
                                     entry = entry,
-                                    pickerMode = pickerMode,
+                                    pickerMode = state.pickerMode,
                                     onNavigate = { viewModel.navigate(entry.path) },
                                     onSelect = { viewModel.selectEntry(entry) },
                                     onRename = { viewModel.requestRename(entry) },
@@ -309,7 +308,7 @@ private fun BreadcrumbRow(
 @Composable
 private fun FileEntryRow(
     entry: RemoteFileEntry,
-    pickerMode: Boolean,
+    pickerMode: RemotePickerMode,
     onNavigate: () -> Unit,
     onSelect: () -> Unit,
     onRename: () -> Unit,
@@ -340,7 +339,7 @@ private fun FileEntryRow(
         trailingContent = {
             Box {
                 Row {
-                    if (!entry.isDirectory || pickerMode) {
+                    if (!entry.isDirectory || pickerMode != RemotePickerMode.BROWSE) {
                         // Show context menu button
                     }
                     IconButton(onClick = { menuExpanded = true }) {
@@ -372,7 +371,9 @@ private fun FileEntryRow(
         },
         modifier = Modifier.clickable {
             when {
-                pickerMode -> onSelect()
+                pickerMode == RemotePickerMode.PICK_DIRECTORY && entry.isDirectory -> onSelect()
+                pickerMode == RemotePickerMode.PICK_FILE && entry.isDirectory -> onNavigate()
+                pickerMode == RemotePickerMode.PICK_FILE -> onSelect()
                 entry.isDirectory -> onNavigate()
                 else -> onSelect()
             }

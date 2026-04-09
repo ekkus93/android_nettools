@@ -10,6 +10,7 @@ import dev.nettools.android.data.ssh.SshConnectionManager
 import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.model.RemoteFileEntry
 import dev.nettools.android.domain.model.TransferError
+import dev.nettools.android.service.RemotePickerMode
 import dev.nettools.android.service.TransferProgressHolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ data class SftpBrowserUiState(
     val isConnected: Boolean = false,
     val breadcrumbs: List<String> = listOf("~"),
     val sortOrder: SortOrder = SortOrder.NAME,
+    val pickerMode: RemotePickerMode = RemotePickerMode.BROWSE,
     /** Non-null when the browser is in "pick" mode and an item has been selected. */
     val selectedPath: String? = null,
     /** Dialog state for rename operation. */
@@ -73,6 +75,7 @@ class SftpBrowserViewModel @Inject constructor(
     private var authType: AuthType = AuthType.PASSWORD
     private var password: String? = null
     private var keyPath: String? = null
+    private var homePath: String = "~"
 
     init {
         // Auto-connect if credentials were pre-loaded into TransferProgressHolder
@@ -87,6 +90,7 @@ class SftpBrowserViewModel @Inject constructor(
                 authType = params.authType,
                 password = params.password,
                 keyPath = params.keyPath,
+                pickerMode = params.pickerMode,
             )
         }
     }
@@ -111,6 +115,7 @@ class SftpBrowserViewModel @Inject constructor(
         password: String? = null,
         keyPath: String? = null,
         initialPath: String = "~",
+        pickerMode: RemotePickerMode = RemotePickerMode.BROWSE,
     ) {
         this.host = host
         this.port = port
@@ -118,6 +123,7 @@ class SftpBrowserViewModel @Inject constructor(
         this.authType = authType
         this.password = password
         this.keyPath = keyPath
+        _uiState.update { it.copy(pickerMode = pickerMode) }
         viewModelScope.launch(Dispatchers.IO) {
             openSshAndNavigate(initialPath)
         }
@@ -154,7 +160,7 @@ class SftpBrowserViewModel @Inject constructor(
     }
 
     /** Navigates to the remote home directory. */
-    fun navigateHome() = navigate("~")
+    fun navigateHome() = navigate(homePath)
 
     /** Refreshes the current directory listing. */
     fun refresh() = navigate(_uiState.value.currentPath)
@@ -273,7 +279,14 @@ class SftpBrowserViewModel @Inject constructor(
             )
         }.onSuccess {
             _uiState.update { it.copy(isConnected = true) }
-            navigate(initialPath)
+            viewModelScope.launch(Dispatchers.IO) {
+                runCatching { sftpClient.resolvePath(requireClient(), initialPath) }
+                    .onSuccess { resolvedPath ->
+                        homePath = sftpClient.resolvePath(requireClient(), "~")
+                        navigate(resolvedPath)
+                    }
+                    .onFailure { handleError(it) }
+            }
         }.onFailure { handleError(it) }
     }
 

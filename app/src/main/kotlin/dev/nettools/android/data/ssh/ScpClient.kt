@@ -68,15 +68,12 @@ class ScpClient @Inject constructor() {
         sshClient: SSHClient,
         remotePath: String,
         localFile: File,
-    ): Flow<TransferProgress> {
-        val fileName = remotePath.substringAfterLast('/')
-        return transferFlow(fileName, totalBytes = -1L) { listener ->
-            localFile.parentFile?.mkdirs()
-            val scp = sshClient.newSCPFileTransfer()
-            scp.transferListener = listener
-            scp.download(remotePath, FileSystemFile(localFile))
-        }
-    }
+    ): Flow<TransferProgress> = downloadViaSftp(
+        sshClient = sshClient,
+        remotePath = remotePath,
+        localFile = localFile,
+        resumeOffset = 0L,
+    )
 
     /**
      * Downloads [remotePath] from the remote host with byte-offset resume support.
@@ -90,6 +87,18 @@ class ScpClient @Inject constructor() {
      * @return Flow of [TransferProgress] updates.
      */
     fun downloadResumable(
+        sshClient: SSHClient,
+        remotePath: String,
+        localFile: File,
+        resumeOffset: Long,
+    ): Flow<TransferProgress> = downloadViaSftp(
+        sshClient = sshClient,
+        remotePath = remotePath,
+        localFile = localFile,
+        resumeOffset = resumeOffset,
+    )
+
+    private fun downloadViaSftp(
         sshClient: SSHClient,
         remotePath: String,
         localFile: File,

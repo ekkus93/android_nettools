@@ -109,4 +109,25 @@ class ExtensionsTest {
     fun `sanitizeForLog returns REDACTED for empty string`() {
         assertEquals("[REDACTED]", "".sanitizeForLog())
     }
+
+    // ── toDisplayPath ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `toDisplayPath keeps filesystem paths unchanged`() {
+        assertEquals("/storage/emulated/0/Download/giphy.gif", "/storage/emulated/0/Download/giphy.gif".toDisplayPath())
+    }
+
+    @Test
+    fun `toDisplayPath formats SAF document URIs`() {
+        val uri = "content://com.android.externalstorage.documents/document/primary%3ADownload%2Fgiphy.gif"
+
+        assertEquals("Download/giphy.gif", uri.toDisplayPath())
+    }
+
+    @Test
+    fun `toDisplayPath formats SAF tree URIs`() {
+        val uri = "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FTransfer"
+
+        assertEquals("Download/Transfer", uri.toDisplayPath())
+    }
 }
