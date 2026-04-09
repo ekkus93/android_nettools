@@ -1,5 +1,23 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-09T04:00:27Z - Claude Sonnet 4.6 - All 16 phases complete, tests passing
+
+**Commit:** `e4256ba` — Phase 14 comprehensive test suite + all TODO.md items marked done.
+
+**Bugs fixed this session:**
+- `ScpClient.downloadResumable`: was using `outputStream()` (truncates file) instead of `RandomAccessFile("rw")` for resumable writes
+- `HistoryViewModelTest`: needed `Dispatchers.setMain(testDispatcher)` / `resetMain()` so `viewModelScope` uses the test dispatcher with `stateIn(WhileSubscribed)`
+- `ScpClientIntegrationTest`: `PasswordAuthenticator` lambda needed explicit SAM constructor
+- `ScpClientTest`: backtick test name with `.part` is illegal; `any()` needed explicit type hint for `SCPFileTransfer.download`
+- Test data: query `"a"` matched both entries via `host = "server.local"` (contains 'a'); changed to `"a.zip"`
+
+**Test suite (95 tests, all passing):**
+- `ScpClientTest`, `SftpClientTest`, `ScpClientIntegrationTest` (real MINA SSHD)
+- `TransferProgressHolderTest`, `TransferHistoryRepositoryImplTest`
+- `SftpBrowserViewModelSortTest`, `HistoryViewModelTest`
+
+**Project status:** COMPLETE — all features implemented, lint clean, tests green, pushed to GitHub.
+
 ## 2026-04-09T00:30:41Z - Claude Sonnet 4.5 - Initial project scaffold completed
 
 **Build status:** `./gradlew assembleDebug` succeeds (BUILD SUCCESSFUL).
