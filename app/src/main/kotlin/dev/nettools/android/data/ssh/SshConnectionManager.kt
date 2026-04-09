@@ -6,7 +6,9 @@ import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.model.TransferError
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
+import java.security.MessageDigest
 import java.security.PublicKey
+import java.util.Base64
 import javax.inject.Inject
 
 /**
@@ -18,6 +20,36 @@ class SshConnectionManager @Inject constructor() {
 
     companion object {
         private const val CONNECT_TIMEOUT_MS = 30_000
+    }
+
+    /**
+     * Opens a TCP + SSH transport connection to [host]:[port], captures the server's
+     * host key fingerprint, then immediately closes the connection. The host key is
+     * **not** authenticated — this is used purely for TOFU pre-flight checks.
+     *
+     * @param host Remote hostname or IP address.
+     * @param port SSH port number.
+     * @return The SHA-256 fingerprint of the server's host key (e.g. "SHA256:xxxx"),
+     *         or null if the host is unreachable before the key exchange completes.
+     */
+    fun peekHostKey(host: String, port: Int): String? {
+        var captured: String? = null
+        val client = SSHClient()
+        client.connectTimeout = CONNECT_TIMEOUT_MS
+        client.addHostKeyVerifier(object : HostKeyVerifier {
+            override fun verify(hostname: String, portNumber: Int, key: PublicKey): Boolean {
+                val digest = MessageDigest.getInstance("SHA-256").digest(key.encoded)
+                val b64 = Base64.getEncoder().withoutPadding().encodeToString(digest)
+                captured = "SHA256:$b64"
+                return false // reject — we only want the fingerprint
+            }
+
+            override fun findExistingAlgorithms(hostname: String, portNumber: Int): List<String> =
+                emptyList()
+        })
+        runCatching { client.connect(host, port) }
+        runCatching { client.close() }
+        return captured
     }
 
     /**

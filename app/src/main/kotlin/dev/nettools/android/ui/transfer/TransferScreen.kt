@@ -305,7 +305,7 @@ fun TransferScreen(
                 supportingText = state.remotePathError?.let { { Text(it) } },
                 trailingIcon = {
                     TextButton(
-                        onClick = { navController.navigate(Routes.SFTP_BROWSER) },
+                        onClick = { viewModel.prepareSftpBrowse(); navController.navigate(Routes.SFTP_BROWSER) },
                         enabled = state.host.isNotBlank() && state.username.isNotBlank(),
                     ) {
                         Text("Browse…")

@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nettools.android.data.security.CredentialStore
 import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.data.security.KnownHostsManager.VerificationResult
+import dev.nettools.android.data.ssh.SshConnectionManager
 import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.model.ConnectionProfile
 import dev.nettools.android.domain.model.TransferDirection
@@ -18,8 +19,10 @@ import dev.nettools.android.domain.model.TransferStatus
 import dev.nettools.android.domain.repository.ConnectionProfileRepository
 import dev.nettools.android.domain.repository.TransferHistoryRepository
 import dev.nettools.android.service.PendingTransferParams
+import dev.nettools.android.service.SftpConnectionParams
 import dev.nettools.android.service.TransferForegroundService
 import dev.nettools.android.service.TransferProgressHolder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,6 +31,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -93,11 +97,11 @@ data class TransferUiState(
 class TransferViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val profileRepository: ConnectionProfileRepository,
-    @Suppress("UnusedPrivateMember")
     private val historyRepository: TransferHistoryRepository,
     private val credentialStore: CredentialStore,
     private val knownHostsManager: KnownHostsManager,
     private val progressHolder: TransferProgressHolder,
+    private val sshConnectionManager: SshConnectionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransferUiState())
@@ -190,26 +194,88 @@ class TransferViewModel @Inject constructor(
     // ── Transfer dispatch ─────────────────────────────────────────────────────
 
     /**
-     * Validates the form and, if valid, checks the remote host key then
-     * dispatches the transfer to [TransferForegroundService].
+     * Validates the form and, if valid, performs a TOFU pre-flight host-key check before
+     * dispatching the transfer to [TransferForegroundService].
+     *
+     * The pre-flight opens a TCP connection without authenticating just to capture the
+     * server's host key fingerprint.  If the key is unknown or changed, a dialog is surfaced
+     * to the user before any credentials are sent.
      */
     fun startTransfer() {
         if (!validate()) return
         viewModelScope.launch {
             val state = _uiState.value
             val port = state.port.toIntOrNull() ?: 22
+            _uiState.update { it.copy(isConnecting = true, errorMessage = null) }
 
-            // Pre-flight host-key check so we can show TOFU before connecting.
-            val storedFingerprint = knownHostsManager.getStoredFingerprint(state.host, port)
-            if (storedFingerprint == null) {
-                // We don't have a fingerprint on file; the service connection will surface
-                // TransferError.UnknownHostKey once the real key is seen.
-                // Surface the check by attempting a "peek" connect to retrieve the key.
-                // For now, proceed — the service will raise the error and we re-show the dialog.
+            val liveFingerprint: String? = withContext(Dispatchers.IO) {
+                sshConnectionManager.peekHostKey(state.host, port)
             }
 
-            dispatchTransfer()
+            if (liveFingerprint == null) {
+                // Couldn't reach the host before key exchange.
+                _uiState.update {
+                    it.copy(
+                        isConnecting = false,
+                        errorMessage = "Could not reach ${state.host}:$port",
+                    )
+                }
+                return@launch
+            }
+
+            val stored = knownHostsManager.getStoredFingerprint(state.host, port)
+            when {
+                stored == null -> {
+                    // Never seen this host — show TOFU dialog.
+                    _uiState.update {
+                        it.copy(
+                            isConnecting = false,
+                            pendingHostKey = PendingHostKey(
+                                host = state.host,
+                                fingerprint = liveFingerprint,
+                            ),
+                        )
+                    }
+                }
+                stored != liveFingerprint -> {
+                    // Key has changed — show warning dialog.
+                    _uiState.update {
+                        it.copy(
+                            isConnecting = false,
+                            pendingHostKey = PendingHostKey(
+                                host = state.host,
+                                fingerprint = liveFingerprint,
+                                isChanged = true,
+                                oldFingerprint = stored,
+                            ),
+                        )
+                    }
+                }
+                else -> {
+                    // Key is already trusted — proceed immediately.
+                    _uiState.update { it.copy(isConnecting = false) }
+                    dispatchTransfer()
+                }
+            }
         }
+    }
+
+    /**
+     * Stores the current connection credentials in [TransferProgressHolder] so that the
+     * SFTP Browser can read them on launch without passing secrets through nav arguments.
+     * Must be called before navigating to [Routes.SFTP_BROWSER].
+     */
+    fun prepareSftpBrowse() {
+        val state = _uiState.value
+        val port = state.port.toIntOrNull() ?: 22
+        progressHolder.pendingSftpConnectionParams = SftpConnectionParams(
+            host = state.host,
+            port = port,
+            username = state.username,
+            authType = state.authType,
+            password = state.password.ifBlank { null },
+            keyPath = state.keyPath.ifBlank { null },
+        )
     }
 
     private suspend fun dispatchTransfer() {

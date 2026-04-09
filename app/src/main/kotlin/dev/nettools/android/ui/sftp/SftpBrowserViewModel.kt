@@ -3,12 +3,13 @@ package dev.nettools.android.ui.sftp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.data.ssh.SftpClient
 import dev.nettools.android.data.ssh.SshConnectionManager
-import dev.nettools.android.data.security.KnownHostsManager
 import dev.nettools.android.domain.model.AuthType
 import dev.nettools.android.domain.model.RemoteFileEntry
 import dev.nettools.android.domain.model.TransferError
+import dev.nettools.android.service.TransferProgressHolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +52,7 @@ class SftpBrowserViewModel @Inject constructor(
     private val sshConnectionManager: SshConnectionManager,
     private val sftpClient: SftpClient,
     private val knownHostsManager: KnownHostsManager,
+    private val progressHolder: TransferProgressHolder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SftpBrowserUiState())
@@ -67,6 +69,23 @@ class SftpBrowserViewModel @Inject constructor(
     private var authType: AuthType = AuthType.PASSWORD
     private var password: String? = null
     private var keyPath: String? = null
+
+    init {
+        // Auto-connect if credentials were pre-loaded into TransferProgressHolder
+        // (set by TransferViewModel.prepareSftpBrowse() before navigation).
+        val params = progressHolder.pendingSftpConnectionParams
+        if (params != null) {
+            progressHolder.pendingSftpConnectionParams = null
+            connect(
+                host = params.host,
+                port = params.port,
+                username = params.username,
+                authType = params.authType,
+                password = params.password,
+                keyPath = params.keyPath,
+            )
+        }
+    }
 
     /**
      * Initialises the browser with connection parameters and opens the SSH session.

@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nettools.android.ui.HomeScreen
 import dev.nettools.android.ui.connections.SavedConnectionsScreen
@@ -58,7 +60,10 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.HISTORY) {
                             HistoryScreen(navController = navController)
                         }
-                        composable(Routes.PROGRESS) { backStackEntry ->
+                        composable(
+                            route = Routes.PROGRESS,
+                            arguments = listOf(navArgument("jobId") { type = NavType.StringType }),
+                        ) { backStackEntry ->
                             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
                             ProgressScreen(jobId = jobId, navController = navController)
                         }

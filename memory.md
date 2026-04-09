@@ -60,3 +60,13 @@ All source files placed directly in `/home/phil/work/android_nettools/`.
 - Real transfer orchestration (service wires to SSH clients)
 - Tests (unit, integration, UI)
 - Permission request handling at runtime
+
+## 2026-04-09T01:51:50Z - GPT-5.4 - Added code review follow-up TODO
+
+Created `docs/CODE_REVIEW1_TODO.md` as a detailed remediation list based on code review findings.
+
+Primary reviewed issues captured there:
+- `TransferForegroundService` does not execute real transfers yet
+- `TransferProgressHolder` needs atomic state updates and should be the single progress source
+- `SftpBrowserScreen` is not wired to pass/connect with transfer credentials
+- local picker results are SAF URIs, but transfer code currently assumes `java.io.File`
