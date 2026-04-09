@@ -92,14 +92,14 @@ class ScpClient @Inject constructor() {
                 val remoteFile = sftp.open(remotePath)
                 try {
                     val totalSize = remoteFile.fetchAttributes().size
-                    localFile.outputStream().use { out ->
-                        if (resumeOffset > 0) out.channel.position(resumeOffset)
+                    java.io.RandomAccessFile(localFile, "rw").use { raf ->
+                        raf.seek(resumeOffset)
                         val buf = ByteArray(DEFAULT_BUFFER_SIZE)
                         var offset = resumeOffset
                         while (offset < totalSize) {
                             val read = remoteFile.read(offset, buf, 0, buf.size)
                             if (read <= 0) break
-                            out.write(buf, 0, read)
+                            raf.write(buf, 0, read)
                             offset += read
                         }
                     }

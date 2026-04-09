@@ -133,6 +133,7 @@ dependencies {
     testImplementation(libs.mina.sshd.core)
     testImplementation(libs.mina.sshd.scp)
     testImplementation(libs.mina.sshd.sftp)
+    testImplementation(libs.androidx.room.testing)
 
     // Android Instrumentation Tests
     androidTestImplementation(libs.androidx.test.junit)
