@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class dev.nettools.android.ui.sftp.SftpBrowserViewModel

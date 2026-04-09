@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.12.0" type="incidents">
+
+    <incident
+        id="AndroidGradlePluginVersion"
+        severity="warning"
+        message="A newer version of Gradle than 8.13 is available: 8.14.4">
+        <fix-replace
+            description="Update to 8.14.4"
+            oldString="8.13"
+            replacement="8.14.4"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/wrapper/gradle-wrapper.properties"
+            line="4"
+            column="17"
+            startOffset="111"
+            endLine="4"
+            endColumn="79"
+            endOffset="173"/>
+    </incident>
+
+    <incident
+        id="AndroidGradlePluginVersion"
+        severity="warning"
+        message="A newer version of com.android.application than 8.12.0 is available: 9.1.0. (There is also a newer version of 8.12.𝑥 available, if upgrading to 9.1.0 is difficult: 8.12.3)">
+        <fix-alternatives>
+            <fix-replace
+                description="Replace with 8.12.3"
+                family="Update versions"
+                robot="true"
+                independent="true"
+                oldString="8.12.0"
+                replacement="8.12.3"
+                priority="0"/>
+            <fix-replace
+                description="Replace with 9.1.0"
+                family="Update versions"
+                oldString="8.12.0"
+                replacement="9.1.0"
+                priority="0"/>
+        </fix-alternatives>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="2"
+            column="7"
+            startOffset="17"
+            endLine="2"
+            endColumn="15"
+            endOffset="25"/>
+        <map>
+            <entry
+                name="coordinate"
+                string="com.android.application"/>
+            <entry
+                name="revision"
+                string="9.1.0"/>
+        </map>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.core:core-ktx than 1.17.0 is available: 1.18.0">
+        <fix-replace
+            description="Change to 1.18.0"
+            family="Update versions"
+            oldString="1.17.0"
+            replacement="1.18.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="4"
+            column="11"
+            startOffset="54"
+            endLine="4"
+            endColumn="19"
+            endOffset="62"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.9.2 is available: 2.10.0">
+        <fix-replace
+            description="Change to 2.10.0"
+            family="Update versions"
+            oldString="2.9.2"
+            replacement="2.10.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="5"
+            column="23"
+            startOffset="85"
+            endLine="5"
+            endColumn="30"
+            endOffset="92"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-service than 2.9.2 is available: 2.10.0">
+        <fix-replace
+            description="Change to 2.10.0"
+            family="Update versions"
+            oldString="2.9.2"
+            replacement="2.10.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="5"
+            column="23"
+            startOffset="85"
+            endLine="5"
+            endColumn="30"
+            endOffset="92"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.2 is available: 2.10.0">
+        <fix-replace
+            description="Change to 2.10.0"
+            family="Update versions"
+            oldString="2.9.2"
+            replacement="2.10.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="5"
+            column="23"
+            startOffset="85"
+            endLine="5"
+            endColumn="30"
+            endOffset="92"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.activity:activity-compose than 1.10.1 is available: 1.13.0">
+        <fix-replace
+            description="Change to 1.13.0"
+            family="Update versions"
+            oldString="1.10.1"
+            replacement="1.13.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="6"
+            column="19"
+            startOffset="111"
+            endLine="6"
+            endColumn="27"
+            endOffset="119"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.compose:compose-bom than 2025.08.00 is available: 2026.03.01">
+        <fix-replace
+            description="Change to 2026.03.01"
+            family="Update versions"
+            oldString="2025.08.00"
+            replacement="2026.03.01"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="7"
+            column="14"
+            startOffset="133"
+            endLine="7"
+            endColumn="26"
+            endOffset="145"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.room:room-compiler than 2.7.2 is available: 2.8.4">
+        <fix-replace
+            description="Change to 2.8.4"
+            family="Update versions"
+            oldString="2.7.2"
+            replacement="2.8.4"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="8"
+            column="8"
+            startOffset="153"
+            endLine="8"
+            endColumn="15"
+            endOffset="160"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.room:room-ktx than 2.7.2 is available: 2.8.4">
+        <fix-replace
+            description="Change to 2.8.4"
+            family="Update versions"
+            oldString="2.7.2"
+            replacement="2.8.4"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="8"
+            column="8"
+            startOffset="153"
+            endLine="8"
+            endColumn="15"
+            endOffset="160"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.room:room-runtime than 2.7.2 is available: 2.8.4">
+        <fix-replace
+            description="Change to 2.8.4"
+            family="Update versions"
+            oldString="2.7.2"
+            replacement="2.8.4"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="8"
+            column="8"
+            startOffset="153"
+            endLine="8"
+            endColumn="15"
+            endOffset="160"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.hilt:hilt-navigation-compose than 1.2.0 is available: 1.3.0">
+        <fix-replace
+            description="Change to 1.3.0"
+            family="Update versions"
+            oldString="1.2.0"
+            replacement="1.3.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="10"
+            column="25"
+            startOffset="201"
+            endLine="10"
+            endColumn="32"
+            endOffset="208"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.navigation:navigation-compose than 2.8.9 is available: 2.9.7">
+        <fix-replace
+            description="Change to 2.9.7"
+            family="Update versions"
+            oldString="2.8.9"
+            replacement="2.9.7"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="11"
+            column="21"
+            startOffset="229"
+            endLine="11"
+            endColumn="28"
+            endOffset="236"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.security:security-crypto than 1.1.0-alpha06 is available: 1.1.0">
+        <fix-replace
+            description="Change to 1.1.0"
+            family="Update versions"
+            oldString="1.1.0-alpha06"
+            replacement="1.1.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="12"
+            column="18"
+            startOffset="254"
+            endLine="12"
+            endColumn="33"
+            endOffset="269"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.jetbrains.kotlin.android than 2.2.10 is available: 2.3.20">
+        <fix-replace
+            description="Change to 2.3.20"
+            family="Update versions"
+            oldString="2.2.10"
+            replacement="2.3.20"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="3"
+            column="10"
+            startOffset="35"
+            endLine="3"
+            endColumn="18"
+            endOffset="43"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.jetbrains.kotlin.kapt than 2.2.10 is available: 2.3.20">
+        <fix-replace
+            description="Change to 2.3.20"
+            family="Update versions"
+            oldString="2.2.10"
+            replacement="2.3.20"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="3"
+            column="10"
+            startOffset="35"
+            endLine="3"
+            endColumn="18"
+            endOffset="43"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.2.10 is available: 2.3.20">
+        <fix-replace
+            description="Change to 2.3.20"
+            family="Update versions"
+            oldString="2.2.10"
+            replacement="2.3.20"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="3"
+            column="10"
+            startOffset="35"
+            endLine="3"
+            endColumn="18"
+            endOffset="43"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of com.google.dagger.hilt.android than 2.56.2 is available: 2.59.2">
+        <fix-replace
+            description="Change to 2.59.2"
+            family="Update versions"
+            oldString="2.56.2"
+            replacement="2.59.2"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="9"
+            column="8"
+            startOffset="168"
+            endLine="9"
+            endColumn="16"
+            endOffset="176"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of com.google.dagger:hilt-android than 2.56.2 is available: 2.59.2">
+        <fix-replace
+            description="Change to 2.59.2"
+            family="Update versions"
+            oldString="2.56.2"
+            replacement="2.59.2"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="9"
+            column="8"
+            startOffset="168"
+            endLine="9"
+            endColumn="16"
+            endOffset="176"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of com.google.dagger:hilt-android-compiler than 2.56.2 is available: 2.59.2">
+        <fix-replace
+            description="Change to 2.59.2"
+            family="Update versions"
+            oldString="2.56.2"
+            replacement="2.59.2"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="9"
+            column="8"
+            startOffset="168"
+            endLine="9"
+            endColumn="16"
+            endOffset="176"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of com.hierynomus:sshj than 0.39.0 is available: 0.40.0">
+        <fix-replace
+            description="Change to 0.40.0"
+            family="Update versions"
+            oldString="0.39.0"
+            replacement="0.40.0"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="13"
+            column="8"
+            startOffset="277"
+            endLine="13"
+            endColumn="16"
+            endOffset="285"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.junit.jupiter:junit-jupiter-api than 5.11.4 is available: 6.0.3">
+        <fix-replace
+            description="Change to 6.0.3"
+            family="Update versions"
+            oldString="5.11.4"
+            replacement="6.0.3"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="15"
+            column="10"
+            startOffset="317"
+            endLine="15"
+            endColumn="18"
+            endOffset="325"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.junit.jupiter:junit-jupiter-engine than 5.11.4 is available: 6.0.3">
+        <fix-replace
+            description="Change to 6.0.3"
+            family="Update versions"
+            oldString="5.11.4"
+            replacement="6.0.3"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="15"
+            column="10"
+            startOffset="317"
+            endLine="15"
+            endColumn="18"
+            endOffset="325"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.junit.jupiter:junit-jupiter-params than 5.11.4 is available: 6.0.3">
+        <fix-replace
+            description="Change to 6.0.3"
+            family="Update versions"
+            oldString="5.11.4"
+            replacement="6.0.3"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="15"
+            column="10"
+            startOffset="317"
+            endLine="15"
+            endColumn="18"
+            endOffset="325"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of io.mockk:mockk than 1.13.16 is available: 1.14.9">
+        <fix-replace
+            description="Change to 1.14.9"
+            family="Update versions"
+            oldString="1.13.16"
+            replacement="1.14.9"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="16"
+            column="9"
+            startOffset="334"
+            endLine="16"
+            endColumn="18"
+            endOffset="343"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.apache.sshd:sshd-core than 2.14.0 is available: 2.17.1">
+        <fix-replace
+            description="Change to 2.17.1"
+            family="Update versions"
+            oldString="2.14.0"
+            replacement="2.17.1"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="17"
+            column="12"
+            startOffset="355"
+            endLine="17"
+            endColumn="20"
+            endOffset="363"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.apache.sshd:sshd-scp than 2.14.0 is available: 2.17.1">
+        <fix-replace
+            description="Change to 2.17.1"
+            family="Update versions"
+            oldString="2.14.0"
+            replacement="2.17.1"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="17"
+            column="12"
+            startOffset="355"
+            endLine="17"
+            endColumn="20"
+            endOffset="363"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of org.apache.sshd:sshd-sftp than 2.14.0 is available: 2.17.1">
+        <fix-replace
+            description="Change to 2.17.1"
+            family="Update versions"
+            oldString="2.14.0"
+            replacement="2.17.1"
+            priority="0"/>
+        <location
+            file="$HOME/work/android_nettools/gradle/libs.versions.toml"
+            line="17"
+            column="12"
+            startOffset="355"
+            endLine="17"
+            endColumn="20"
+            endOffset="363"/>
+    </incident>
+
+    <incident
+        id="TrustAllX509TrustManager"
+        severity="warning"
+        message="`checkServerTrusted` is empty, which could cause insecure network traffic due to trusting arbitrary TLS/SSL certificates presented by peers">
+        <location
+            file="$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk18on/1.78.1/17b3541f736df97465f87d9f5b5dfa4991b37bb3/bcpkix-jdk18on-1.78.1.jar"/>
+    </incident>
+
+    <incident
+        id="ObsoleteSdkInt"
+        severity="warning"
+        message="This folder configuration (`v24`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `drawable`.">
+        <fix-data file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/drawable-v24" folderName="drawable" requiresApi="26"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/drawable-v24"/>
+    </incident>
+
+    <incident
+        id="ObsoleteSdkInt"
+        severity="warning"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <fix-data file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/mipmap-anydpi-v26" folderName="mipmap-anydpi" requiresApi="26"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/mipmap-anydpi-v26"/>
+    </incident>
+
+    <incident
+        id="KaptUsageInsteadOfKsp"
+        severity="warning"
+        message="This library supports using KSP instead of kapt, which greatly improves performance. Learn more: https://developer.android.com/studio/build/migrate-to-ksp">
+        <show-url
+            description="Learn about how to enable KSP and use the KSP processor for this dependency instead"
+            url="https://developer.android.com/studio/build/migrate-to-ksp"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="112"
+            column="5"
+            startOffset="3033"
+            endLine="112"
+            endColumn="38"
+            endOffset="3066"/>
+    </incident>
+
+    <incident
+        id="MonochromeLauncherIcon"
+        severity="warning"
+        message="The application adaptive icon is missing a monochrome tag">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"
+            startOffset="39"
+            endLine="5"
+            endColumn="17"
+            endOffset="268"/>
+    </incident>
+
+    <incident
+        id="MonochromeLauncherIcon"
+        severity="warning"
+        message="The application adaptive roundIcon is missing a monochrome tag">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"
+            startOffset="39"
+            endLine="5"
+            endColumn="17"
+            endOffset="268"/>
+    </incident>
+
+    <incident
+        id="UseKtx"
+        severity="warning"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?">
+        <fix-composite
+            description="Replace with the edit extension function"
+            family="Replace with the edit extension function"
+            robot="true"
+            independent="true">
+            <fix-replace
+                description="Replace with edit"
+                robot="true"
+                independent="true"
+                oldString="edit("
+                replacement="edit"
+                reformat="value"
+                imports="androidx.core.content.edit"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="1596"
+                    endOffset="1601"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with  {"
+                robot="true"
+                independent="true"
+                oldString=")"
+                replacement=" {"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="1601"
+                    endOffset="1602"/>
+            </fix-replace>
+            <fix-replace
+                description="Delete &quot;.&quot;"
+                robot="true"
+                independent="true"
+                oldString="."
+                replacement=""
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="1602"
+                    endOffset="1603"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with }"
+                robot="true"
+                independent="true"
+                oldString=".apply()"
+                replacement="}"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="1633"
+                    endOffset="1641"/>
+            </fix-replace>
+        </fix-composite>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+            line="48"
+            column="9"
+            startOffset="1590"
+            endLine="48"
+            endColumn="21"
+            endOffset="1602"/>
+    </incident>
+
+    <incident
+        id="UseKtx"
+        severity="warning"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?">
+        <fix-composite
+            description="Replace with the edit extension function"
+            family="Replace with the edit extension function"
+            robot="true"
+            independent="true">
+            <fix-replace
+                description="Replace with edit"
+                robot="true"
+                independent="true"
+                oldString="edit("
+                replacement="edit"
+                reformat="value"
+                imports="androidx.core.content.edit"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="2142"
+                    endOffset="2147"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with  {"
+                robot="true"
+                independent="true"
+                oldString=")"
+                replacement=" {"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="2147"
+                    endOffset="2148"/>
+            </fix-replace>
+            <fix-replace
+                description="Delete &quot;.&quot;"
+                robot="true"
+                independent="true"
+                oldString="."
+                replacement=""
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="2148"
+                    endOffset="2149"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with }"
+                robot="true"
+                independent="true"
+                oldString=".apply()"
+                replacement="}"
+                priority="0">
+                <range
+                    file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+                    startOffset="2166"
+                    endOffset="2174"/>
+            </fix-replace>
+        </fix-composite>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*1}/dev/nettools/android/data/security/CredentialStore.kt"
+            line="66"
+            column="9"
+            startOffset="2136"
+            endLine="66"
+            endColumn="21"
+            endOffset="2148"/>
+    </incident>
+
+</incidents>

@@ -1,0 +1,2 @@
+Ok. I've turned on yolo. I want you to implement each task and subtask in docs/TODO.md. After you implement each task and subtask, make sure that you update the statuses for each task and subtask. After each phase, make sure to lint the files and run all of the tests. Do not hide any lint errors or warnings. Actually, fix them. If lint and all of the tests pass, check in the files and push to github. Keep implementing all of the tasks and subtasks until they are all done. Good luck. Have fun. Go!
+

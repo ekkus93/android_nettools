@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NetTools</string>
+    <string name="transfer_channel_name">File Transfers</string>
+    <string name="transfer_channel_desc">Background file transfer progress</string>
+</resources>
