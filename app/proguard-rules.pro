@@ -10,6 +10,19 @@
 -keep class org.bouncycastle.** { *; }
 -dontwarn org.bouncycastle.**
 
+# EdDSA (used by SSHJ)
+-keep class net.i2p.crypto.** { *; }
+-dontwarn net.i2p.crypto.**
+-dontwarn sun.security.x509.**
+
+# Google Tink (used by security-crypto / EncryptedSharedPreferences)
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn com.google.crypto.tink.**
+
+# Error-prone annotations (compile-only, not present at runtime)
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+
 # SLF4J (used by SSHJ)
 -keep class org.slf4j.** { *; }
 -dontwarn org.slf4j.**
