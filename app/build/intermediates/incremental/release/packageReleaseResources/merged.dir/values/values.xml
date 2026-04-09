@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">NetTools</string>
-    <string name="transfer_channel_desc">Background file transfer progress</string>
-    <string name="transfer_channel_name">File Transfers</string>
-    <style name="Theme.NetTools" parent="android:Theme.Material.Light.NoActionBar"/>
-</resources>
