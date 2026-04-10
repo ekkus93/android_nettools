@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T17:21:04Z - GPT-5.4 - Finished curl cancellation messaging slice
+
+Finished the curl cancellation-messaging slice by adding a shared explicit cancellation message, appending it to stderr/live output when a run is cancelled, and covering the formatter with a unit test. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and fixed the newly surfaced KAPT warning by moving the `kotlin-kapt` plugin to the bottom of `app/build.gradle.kts` so the build stays warning-free on non-cached annotation-processing runs.
+
 ## 2026-04-10T17:10:53Z - GPT-5.4 - User chose fixed app-private curl workspace for v1
 
 For the remaining workspace-root design, the user chose a v1 that keeps curl’s workspace as a fixed app-private root and relies on Android pickers for import/export around that root instead of trying to use arbitrary SAF folder URIs as native curl filesystem paths. Updated the curl spec/TODO docs to reflect that the app-private workspace model is intentional rather than a temporary gap.

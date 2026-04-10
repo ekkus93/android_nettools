@@ -7,6 +7,9 @@ import java.io.FileNotFoundException
  */
 object CurlUserMessageFormatter {
 
+    /** Returns the standard user-facing message for a cancelled curl run. */
+    fun executionCancelled(): String = "Curl run cancelled by user."
+
     /**
      * Maps an execution-layer [error] into a user-facing message.
      */

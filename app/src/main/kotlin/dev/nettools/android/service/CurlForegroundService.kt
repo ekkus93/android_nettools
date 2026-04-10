@@ -147,6 +147,16 @@ class CurlForegroundService : LifecycleService() {
             }
             notifyCompletion(params.runId, notification)
         } catch (e: CancellationException) {
+            val cancellationMessage = CurlUserMessageFormatter.executionCancelled()
+            curlRunHolder.appendOutput(isStdout = false, chunk = cancellationMessage)
+            if (params.loggingEnabled) {
+                runRepository.appendOutput(
+                    runId = params.runId,
+                    stream = CurlOutputStream.STDERR,
+                    text = cancellationMessage,
+                    byteCap = params.stderrByteCap,
+                )
+            }
             val cleanupResult = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
             runRepository.updateStatus(
                 runId = params.runId,

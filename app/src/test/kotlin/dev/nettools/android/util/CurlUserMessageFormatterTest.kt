@@ -11,6 +11,11 @@ import java.io.IOException
 class CurlUserMessageFormatterTest {
 
     @Test
+    fun `execution cancelled returns explicit message`() {
+        assertEquals("Curl run cancelled by user.", CurlUserMessageFormatter.executionCancelled())
+    }
+
+    @Test
     fun `execution failure maps missing files`() {
         val message = CurlUserMessageFormatter.executionFailure(
             FileNotFoundException("No such file or directory"),

@@ -303,7 +303,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Import/export failure
   - [x] Native runtime failure
   - [x] TLS/certificate failure surfaced by curl
-  - [ ] Cancellation
+  - [x] Cancellation
   - [ ] Partial remote cleanup failure
 - [ ] Ensure no silent failures
   - [x] Service cleanup paths
