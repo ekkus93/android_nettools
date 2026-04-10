@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T20:17:33Z - GPT-5.4 - Fixed real-device curl runtime packaging and closed final curl validation
+
+The final curl-delivery slice moved the bundled curl executable into per-ABI `jniLibs` as `libcurl_exec.so`, enabled legacy native-library extraction, and updated runtime lookup to launch the executable from `applicationInfo.nativeLibraryDir`; this fixed the on-device "embedded curl runtime unavailable" failure that only showed up in the app process. After that fix, curl was manually verified on the connected `SM_A546E` across home/relaunch with a live foreground run, `docs/CURL_TODO.md` was fully closed, `./gradlew --no-daemon --console=plain lintDebug` passed, and `./gradlew --no-daemon --console=plain test assembleDebug assembleDebugAndroidTest connectedDebugAndroidTest` also passed with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
+
 ## 2026-04-10T19:22:39Z - GPT-5.4 - Remaining curl TODO items are explicitly device-blocked
 
 Rechecked `adb devices -l` after the final Kotlin-side curl work and there is still no connected Android device, so the only remaining unchecked items in `docs/CURL_TODO.md` are now annotated as blocked-by-hardware: connected Android test execution and real-device foreground/background validation. The SQL phase tracker already reflects this as a blocked final-delivery todo rather than unfinished implementation work.

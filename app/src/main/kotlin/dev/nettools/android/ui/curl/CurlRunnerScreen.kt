@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -125,7 +126,8 @@ internal fun CurlRunnerContent(
                 onValueChange = onCommandChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp),
+                    .height(220.dp)
+                    .testTag("curl-command-input"),
                 label = { Text("Command") },
                 placeholder = { Text("curl https://example.com") },
                 supportingText = {
@@ -180,7 +182,8 @@ internal fun CurlRunnerContent(
                 enabled = !state.hasActiveRun,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(52.dp)
+                    .testTag("curl-run-button"),
             ) {
                 Text(if (state.hasActiveRun) "Run unavailable" else "Run")
             }

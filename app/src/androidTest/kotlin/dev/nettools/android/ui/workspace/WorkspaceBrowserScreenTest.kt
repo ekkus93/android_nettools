@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -89,22 +90,22 @@ class WorkspaceBrowserScreenTest {
         composeRule.onNodeWithText("notes.txt").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("Create directory").performClick()
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("logs")
-        composeRule.onNodeWithText("Create").performClick()
+        composeRule.onNodeWithTag("workspace-name-input").performTextReplacement("logs")
+        composeRule.onNodeWithTag("workspace-dialog-confirm").performClick()
 
         composeRule.onAllNodesWithContentDescription("Workspace entry actions")[0].performClick()
         composeRule.onAllNodesWithText("Rename")[0].performClick()
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("archive.txt")
-        composeRule.onAllNodesWithText("Rename")[1].performClick()
+        composeRule.onNodeWithTag("workspace-name-input").performTextReplacement("archive.txt")
+        composeRule.onNodeWithTag("workspace-dialog-confirm").performClick()
 
         composeRule.onAllNodesWithContentDescription("Workspace entry actions")[0].performClick()
         composeRule.onAllNodesWithText("Move")[0].performClick()
-        composeRule.onNode(hasSetTextAction()).performTextReplacement("/archive")
-        composeRule.onAllNodesWithText("Move")[1].performClick()
+        composeRule.onNodeWithTag("workspace-name-input").performTextReplacement("/archive")
+        composeRule.onNodeWithTag("workspace-dialog-confirm").performClick()
 
         composeRule.onAllNodesWithContentDescription("Workspace entry actions")[0].performClick()
         composeRule.onAllNodesWithText("Delete")[0].performClick()
-        composeRule.onAllNodesWithText("Delete")[1].performClick()
+        composeRule.onNodeWithTag("workspace-delete-confirm").performClick()
 
         composeRule.runOnIdle {
             check(createdName.value == "logs")

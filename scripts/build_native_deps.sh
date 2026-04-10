@@ -23,6 +23,8 @@ CACERT_URL="https://curl.se/ca/cacert.pem"
 PREBUILT_DIR="${ROOT_DIR}/app/src/main/cpp/prebuilt"
 MAIN_ASSET_DIR="${ROOT_DIR}/app/src/main/assets/curl"
 DEBUG_ASSET_DIR="${ROOT_DIR}/app/src/debug/assets/curl"
+MAIN_JNILIBS_DIR="${ROOT_DIR}/app/src/main/jniLibs"
+DEBUG_JNILIBS_DIR="${ROOT_DIR}/app/src/debug/jniLibs"
 
 ABIS=("arm64-v8a" "armeabi-v7a" "x86_64")
 
@@ -211,18 +213,22 @@ copy_outputs() {
   local abi="$1"
   local prebuilt_abi_dir="${PREBUILT_DIR}/${abi}"
   local asset_root
+  local jnilib_root
   if [[ "${abi}" == "x86_64" ]]; then
     asset_root="${DEBUG_ASSET_DIR}"
+    jnilib_root="${DEBUG_JNILIBS_DIR}"
   else
     asset_root="${MAIN_ASSET_DIR}"
+    jnilib_root="${MAIN_JNILIBS_DIR}"
   fi
 
-  mkdir -p "${prebuilt_abi_dir}/lib" "${asset_root}/${abi}" "${PREBUILT_DIR}/include"
+  mkdir -p "${prebuilt_abi_dir}/lib" "${asset_root}/${abi}" "${jnilib_root}/${abi}" "${PREBUILT_DIR}/include"
   cp "${WORK_DIR}/build-curl-${abi}/lib/libcurl.a" "${prebuilt_abi_dir}/lib/"
   cp "${WORK_DIR}/install-openssl-${abi}/lib/libssl.a" "${prebuilt_abi_dir}/lib/"
   cp "${WORK_DIR}/install-openssl-${abi}/lib/libcrypto.a" "${prebuilt_abi_dir}/lib/"
   cp "${WORK_DIR}/install-nghttp2-${abi}/lib/libnghttp2.a" "${prebuilt_abi_dir}/lib/"
   cp "${WORK_DIR}/build-curl-${abi}/src/curl" "${asset_root}/${abi}/curl"
+  cp "${WORK_DIR}/build-curl-${abi}/src/curl" "${jnilib_root}/${abi}/libcurl_exec.so"
 
   if [[ ! -d "${PREBUILT_DIR}/include/curl" ]]; then
     cp -R "${WORK_DIR}/install-curl-${abi}/include/curl" "${PREBUILT_DIR}/include/"

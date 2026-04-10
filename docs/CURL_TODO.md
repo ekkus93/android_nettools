@@ -346,19 +346,19 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Validation error display for malformed commands
   - [x] Results screen shows stdout/stderr separately
   - [x] Workspace browser CRUD flows
-- [ ] Device/build validation *(blocked: no Android device currently connected over adb)*
+- [x] Device/build validation
   - [x] Verify release ABI packaging (`arm64-v8a`, `armeabi-v7a`)
   - [x] Verify debug/dev `x86_64` packaging
-  - [ ] Verify foreground/background behavior on a real device *(blocked: no Android device currently connected over adb)*
+  - [x] Verify foreground/background behavior on a real device
 
 ---
 
 ## 20. Final Validation and Polish
 
-- [ ] Re-run project validation after implementation
+- [x] Re-run project validation after implementation
   - [x] Run `./gradlew lintDebug`
   - [x] Run `./gradlew test`
-  - [ ] Run any existing Android tests relevant to touched UI/workspace flows *(blocked: no Android device currently connected over adb)*
+  - [x] Run any existing Android tests relevant to touched UI/workspace flows
 - [x] Validate user-visible behavior
   - [x] Workspace root behavior
   - [x] Import/export flows

@@ -5,8 +5,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -59,8 +59,8 @@ class CurlRunnerScreenTest {
             )
         }
 
-        composeRule.onNode(hasSetTextAction()).performTextInput("curl https://example.com")
-        composeRule.onNodeWithText("Run").performClick()
+        composeRule.onNodeWithTag("curl-command-input").performTextInput("curl https://example.com")
+        composeRule.onNodeWithTag("curl-run-button").performClick()
 
         composeRule.runOnIdle {
             check(submittedCommand.value == "curl https://example.com")

@@ -16,12 +16,12 @@ class BundledCurlBinaryProvider @Inject constructor(
 ) : CurlBinaryProvider {
 
     override suspend fun getRuntime(): CurlRuntime {
-        val abi = resolveSupportedAbi()
-        val executable = extractAsset(
-            assetPath = "curl/$abi/curl",
-            targetFile = File(runtimeDirectory(abi), "curl"),
-            executable = true,
-        )
+        val abi = Build.SUPPORTED_ABIS.firstOrNull()
+            ?: error("No supported device ABI was reported by Android.")
+        val executable = File(context.applicationInfo.nativeLibraryDir, "libcurl_exec.so")
+        check(executable.exists() && executable.canExecute()) {
+            "No bundled curl runtime is available for this device ABI."
+        }
         val cacert = extractAsset(
             assetPath = "curl/cacert.pem",
             targetFile = File(runtimeDirectory(abi), "cacert.pem"),
@@ -32,10 +32,6 @@ class BundledCurlBinaryProvider @Inject constructor(
             caCertificatePath = cacert.absolutePath,
         )
     }
-
-    private fun resolveSupportedAbi(): String = Build.SUPPORTED_ABIS.firstOrNull { abi ->
-        runCatching { context.assets.open("curl/$abi/curl").close() }.isSuccess
-    } ?: error("No bundled curl runtime is available for this device ABI.")
 
     private fun runtimeDirectory(abi: String): File = File(context.filesDir, "curl-runtime/$abi").apply {
         mkdirs()

@@ -43,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -299,6 +300,7 @@ internal fun WorkspaceBrowserContent(
             confirmButton = {
                 TextButton(
                     onClick = { onDelete(entry.path) },
+                    modifier = Modifier.testTag("workspace-delete-confirm"),
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
@@ -419,13 +421,18 @@ private fun NameInputDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("workspace-name-input"),
                 label = { Text(label) },
                 singleLine = true,
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(value) }) {
+            TextButton(
+                onClick = { onConfirm(value) },
+                modifier = Modifier.testTag("workspace-dialog-confirm"),
+            ) {
                 Text(confirmLabel)
             }
         },
