@@ -2,7 +2,8 @@ package dev.nettools.android.ui.curl
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -43,7 +45,7 @@ import dev.nettools.android.ui.navigation.Routes
 /**
  * Main screen for entering and starting curl commands.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CurlRunnerScreen(
     navController: NavController,
@@ -78,7 +80,7 @@ fun CurlRunnerScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun CurlRunnerContent(
     state: CurlRunnerUiState,
@@ -153,27 +155,40 @@ internal fun CurlRunnerContent(
                 )
             }
 
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedButton(
                     onClick = onOpenWorkspace,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(fraction = 0.48f),
                 ) {
-                    Text("Workspace")
+                    Text(
+                        text = "Workspace",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 OutlinedButton(
                     onClick = onOpenLogs,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(fraction = 0.48f),
                 ) {
-                    Text("Logs")
+                    Text(
+                        text = "Logs",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 OutlinedButton(
                     onClick = onOpenSettings,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(fraction = 0.48f),
                 ) {
-                    Text("Settings")
+                    Text(
+                        text = "Settings",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
 

@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T20:43:51Z - GPT-5.4 - Curl utility buttons now wrap by row instead of wrapping labels
+
+Adjusted the Curl runner's secondary action layout so the Workspace/Logs/Settings buttons use a wrapping `FlowRow` with single-line labels instead of a forced three-column row. This keeps "Workspace" from breaking into two lines on phone-width layouts while preserving the existing actions and validation flow.
+
 ## 2026-04-10T20:17:33Z - GPT-5.4 - Fixed real-device curl runtime packaging and closed final curl validation
 
 The final curl-delivery slice moved the bundled curl executable into per-ABI `jniLibs` as `libcurl_exec.so`, enabled legacy native-library extraction, and updated runtime lookup to launch the executable from `applicationInfo.nativeLibraryDir`; this fixed the on-device "embedded curl runtime unavailable" failure that only showed up in the app process. After that fix, curl was manually verified on the connected `SM_A546E` across home/relaunch with a live foreground run, `docs/CURL_TODO.md` was fully closed, `./gradlew --no-daemon --console=plain lintDebug` passed, and `./gradlew --no-daemon --console=plain test assembleDebug assembleDebugAndroidTest connectedDebugAndroidTest` also passed with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
