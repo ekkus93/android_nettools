@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T13:02:40Z - GPT-5.4 - Added direct tests for curl workspace adapter behavior
+
+Added targeted unit coverage for the curl workspace adapter so path rewriting, pre-run validation, and partial-output cleanup logic are exercised directly instead of only through higher-level flows. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 and updated `docs/CURL_TODO.md` to mark the cleanup-decision unit-test item done.
+
 ## 2026-04-10T12:57:20Z - GPT-5.4 - Added curl error-message mapping slice
 
 Improved curl-facing error handling by adding shared user-message mapping for execution failures, workspace import/export issues, and save-output failures, then covered the mappings with new unit tests. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 and updated `docs/CURL_TODO.md` for the completed error-handling and unit-test items.

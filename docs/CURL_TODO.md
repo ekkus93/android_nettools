@@ -333,7 +333,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Workspace path normalization
   - [x] File-argument translation
   - [x] Output-cap truncation behavior
-  - [ ] Cleanup decision logic
+  - [x] Cleanup decision logic
 - [ ] Integration tests
   - [ ] Native bridge happy-path execution
   - [ ] Cancellation during active run
