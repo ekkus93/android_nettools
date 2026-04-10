@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T13:44:36Z - GPT-5.4 - Completed embedded curl runtime phase
+
+Finished the embedded curl runtime slice by replacing the placeholder PATH-based runtime with bundled per-ABI curl executables plus generated OpenSSL/nghttp2/libcurl prebuilts, wiring DI to the bundled runtime and option catalog, and linking the JNI bridge against the compiled libcurl build for real version/protocol/feature metadata. `scripts/build_native_deps.sh` now generates release assets for `arm64-v8a` and `armeabi-v7a`, debug assets for `x86_64`, and the full app validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug`.
+
 ## 2026-04-10T13:02:40Z - GPT-5.4 - Added direct tests for curl workspace adapter behavior
 
 Added targeted unit coverage for the curl workspace adapter so path rewriting, pre-run validation, and partial-output cleanup logic are exercised directly instead of only through higher-level flows. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 and updated `docs/CURL_TODO.md` to mark the cleanup-decision unit-test item done.

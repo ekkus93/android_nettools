@@ -1,0 +1,316 @@
+-#
+--abstract-unix-socket <path>
+--alt-svc <filename>
+--anyauth
+--append
+--aws-sigv4 <provider1[:prvdr2[:reg[:srv]]]>
+--basic
+--ca-native
+--cacert <file>
+--capath <dir>
+--cert <certificate[:password]>
+--cert-status
+--cert-type <type>
+--ciphers <list of ciphers>
+--compressed
+--compressed-ssh
+--config <file>
+--connect-timeout <seconds>
+--connect-to <HOST1:PORT1:HOST2:PORT2>
+--continue-at <offset>
+--cookie <data|filename>
+--cookie-jar <filename>
+--create-dirs
+--create-file-mode <mode>
+--crlf
+--crlfile <file>
+--curves <list>
+--data <data>
+--data-ascii <data>
+--data-binary <data>
+--data-raw <data>
+--data-urlencode <data>
+--delegation <LEVEL>
+--digest
+--disable
+--disable-eprt
+--disable-epsv
+--disallow-username-in-url
+--dns-interface <interface>
+--dns-ipv4-addr <address>
+--dns-ipv6-addr <address>
+--dns-servers <addresses>
+--doh-cert-status
+--doh-insecure
+--doh-url <URL>
+--dump-header <filename>
+--ech <config>
+--egd-file <file>
+--engine <name>
+--etag-compare <file>
+--etag-save <file>
+--expect100-timeout <seconds>
+--fail
+--fail-early
+--fail-with-body
+--false-start
+--form <name=content>
+--form-escape
+--form-string <name=string>
+--ftp-account <data>
+--ftp-alternative-to-user <command>
+--ftp-create-dirs
+--ftp-method <method>
+--ftp-pasv
+--ftp-port <address>
+--ftp-pret
+--ftp-skip-pasv-ip
+--ftp-ssl-ccc
+--ftp-ssl-ccc-mode <active/passive>
+--ftp-ssl-control
+--get
+--globoff
+--happy-eyeballs-timeout-ms <ms>
+--haproxy-clientip <ip>
+--haproxy-protocol
+--head
+--header <header/@file>
+--help <category>
+--hostpubmd5 <md5>
+--hostpubsha256 <sha256>
+--hsts <filename>
+--http0.9
+--http1.0
+--http1.1
+--http2
+--http2-prior-knowledge
+--ignore-content-length
+--include
+--insecure
+--interface <name>
+--ipfs-gateway <URL>
+--ipv4
+--ipv6
+--json <data>
+--junk-session-cookies
+--keepalive-time <seconds>
+--key <key>
+--key-type <type>
+--krb <level>
+--libcurl <file>
+--limit-rate <speed>
+--list-only
+--local-port <range>
+--location
+--location-trusted
+--login-options <options>
+--mail-auth <address>
+--mail-from <address>
+--mail-rcpt <address>
+--mail-rcpt-allowfails
+--manual
+--max-filesize <bytes>
+--max-redirs <num>
+--max-time <seconds>
+--metalink
+--negotiate
+--netrc
+--netrc-file <filename>
+--netrc-optional
+--next
+--no-alpn
+--no-buffer
+--no-clobber
+--no-keepalive
+--no-npn
+--no-progress-meter
+--no-sessionid
+--noproxy <no-proxy-list>
+--ntlm
+--ntlm-wb
+--oauth2-bearer <token>
+--output <file>
+--output-dir <dir>
+--parallel
+--parallel-immediate
+--parallel-max <num>
+--pass <phrase>
+--path-as-is
+--pinnedpubkey <hashes>
+--post301
+--post302
+--post303
+--preproxy [protocol://]host[:port]
+--progress-bar
+--proto <protocols>
+--proto-default <protocol>
+--proto-redir <protocols>
+--proxy [protocol://]host[:port]
+--proxy-anyauth
+--proxy-basic
+--proxy-ca-native
+--proxy-cacert <file>
+--proxy-capath <dir>
+--proxy-cert <cert[:passwd]>
+--proxy-cert-type <type>
+--proxy-ciphers <list>
+--proxy-crlfile <file>
+--proxy-digest
+--proxy-header <header/@file>
+--proxy-http2
+--proxy-insecure
+--proxy-key <key>
+--proxy-key-type <type>
+--proxy-negotiate
+--proxy-ntlm
+--proxy-pass <phrase>
+--proxy-pinnedpubkey <hashes>
+--proxy-service-name <name>
+--proxy-ssl-allow-beast
+--proxy-ssl-auto-client-cert
+--proxy-tls13-ciphers <ciphersuite list>
+--proxy-tlsauthtype <type>
+--proxy-tlspassword <string>
+--proxy-tlsuser <name>
+--proxy-tlsv1
+--proxy-user <user:password>
+--proxy1.0 <host[:port]>
+--proxytunnel
+--pubkey <key>
+--quote <command>
+--random-file <file>
+--range <range>
+--rate <max request rate>
+--raw
+--referer <URL>
+--remote-header-name
+--remote-name
+--remote-name-all
+--remote-time
+--remove-on-error
+--request <method>
+--request-target <path>
+--resolve <[+]host:port:addr[
+--retry <num>
+--retry-all-errors
+--retry-connrefused
+--retry-delay <seconds>
+--retry-max-time <seconds>
+--sasl-authzid <identity>
+--sasl-ir
+--service-name <name>
+--show-error
+--silent
+--socks4 <host[:port]>
+--socks4a <host[:port]>
+--socks5 <host[:port]>
+--socks5-basic
+--socks5-gssapi
+--socks5-gssapi-nec
+--socks5-gssapi-service <name>
+--socks5-hostname <host[:port]>
+--speed-limit <speed>
+--speed-time <seconds>
+--ssl
+--ssl-allow-beast
+--ssl-auto-client-cert
+--ssl-no-revoke
+--ssl-reqd
+--ssl-revoke-best-effort
+--sslv2
+--sslv3
+--stderr <file>
+--styled-output
+--suppress-connect-headers
+--tcp-fastopen
+--tcp-nodelay
+--telnet-option <opt=val>
+--tftp-blksize <value>
+--tftp-no-options
+--time-cond <time>
+--tls-max <VERSION>
+--tls13-ciphers <list>
+--tlsauthtype <type>
+--tlspassword <string>
+--tlsuser <name>
+--tlsv1
+--tlsv1.0
+--tlsv1.1
+--tlsv1.2
+--tlsv1.3
+--tr-encoding
+--trace <file>
+--trace-ascii <file>
+--trace-config <string>
+--trace-ids
+--trace-time
+--unix-socket <path>
+--upload-file <file>
+--url <url>
+--url-query <data>
+--use-ascii
+--user <user:password>
+--user-agent <name>
+--variable <[%]name=text/@file>
+--verbose
+--version
+--write-out <format>
+--xattr
+-0
+-1
+-2
+-3
+-4
+-6
+-:
+-A
+-B
+-C
+-D
+-E
+-F
+-G
+-H
+-I
+-J
+-K
+-L
+-M
+-N
+-O
+-P
+-Q
+-R
+-S
+-T
+-U
+-V
+-X
+-Y
+-Z
+-a
+-b
+-c
+-d
+-e
+-f
+-g
+-h
+-i
+-j
+-k
+-l
+-m
+-n
+-o
+-p
+-q
+-r
+-s
+-t
+-u
+-v
+-w
+-x
+-y
+-z

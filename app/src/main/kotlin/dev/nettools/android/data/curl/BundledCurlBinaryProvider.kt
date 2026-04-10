@@ -1,0 +1,62 @@
+package dev.nettools.android.data.curl
+
+import android.content.Context
+import android.os.Build
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Extracts and exposes the bundled per-ABI curl runtime shipped with the app.
+ */
+@Singleton
+class BundledCurlBinaryProvider @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+) : CurlBinaryProvider {
+
+    override suspend fun getRuntime(): CurlRuntime {
+        val abi = resolveSupportedAbi()
+        val executable = extractAsset(
+            assetPath = "curl/$abi/curl",
+            targetFile = File(runtimeDirectory(abi), "curl"),
+            executable = true,
+        )
+        val cacert = extractAsset(
+            assetPath = "curl/cacert.pem",
+            targetFile = File(runtimeDirectory(abi), "cacert.pem"),
+            executable = false,
+        )
+        return CurlRuntime(
+            executablePath = executable.absolutePath,
+            caCertificatePath = cacert.absolutePath,
+        )
+    }
+
+    private fun resolveSupportedAbi(): String = Build.SUPPORTED_ABIS.firstOrNull { abi ->
+        runCatching { context.assets.open("curl/$abi/curl").close() }.isSuccess
+    } ?: error("No bundled curl runtime is available for this device ABI.")
+
+    private fun runtimeDirectory(abi: String): File = File(context.filesDir, "curl-runtime/$abi").apply {
+        mkdirs()
+    }
+
+    private fun extractAsset(
+        assetPath: String,
+        targetFile: File,
+        executable: Boolean,
+    ): File {
+        if (!targetFile.exists()) {
+            targetFile.parentFile?.mkdirs()
+            context.assets.open(assetPath).use { input ->
+                targetFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            if (executable && !targetFile.setExecutable(true, false)) {
+                error("Unable to mark bundled curl runtime as executable.")
+            }
+        }
+        return targetFile
+    }
+}

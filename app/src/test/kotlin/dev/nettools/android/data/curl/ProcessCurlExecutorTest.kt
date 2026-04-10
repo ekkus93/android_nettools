@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class ProcessCurlExecutorTest {
 
     private val binaryProvider = object : CurlBinaryProvider {
-        override suspend fun getExecutablePath(): String = "curl"
+        override suspend fun getRuntime(): CurlRuntime = CurlRuntime(executablePath = "curl")
     }
     private val tempDirectory: String = requireNotNull(System.getProperty("java.io.tmpdir"))
 

@@ -25,18 +25,18 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Enable NDK in the Android app module
   - [x] Add CMake-based native build configuration
   - [x] Define build inputs/outputs for native curl integration
-- [ ] Integrate libcurl
-  - [ ] Bring in libcurl sources or a controlled vendor/build strategy
-  - [ ] Build libcurl for `arm64-v8a` and `armeabi-v7a`
+- [x] Integrate libcurl
+  - [x] Bring in libcurl sources or a controlled vendor/build strategy
+  - [x] Build libcurl for `arm64-v8a` and `armeabi-v7a`
   - [x] Add `x86_64` for debug/development builds
-  - [ ] Configure OpenSSL as the TLS backend
-  - [ ] Enable HTTP/2 if stable in the chosen build pipeline
-  - [ ] Explicitly defer HTTP/3 for v1
+  - [x] Configure OpenSSL as the TLS backend
+  - [x] Enable HTTP/2 if stable in the chosen build pipeline
+  - [x] Explicitly defer HTTP/3 for v1
 - [ ] Control native packaging
   - [x] Ensure debug and release ABI filters match the approved matrix
   - [x] Keep APK/AAB packaging predictable
   - [ ] Verify R8/packaging does not strip required native assets
-- [ ] Expose native build metadata
+- [x] Expose native build metadata
   - [x] Surface embedded curl version
   - [x] Surface supported features/protocols from the compiled build
 
@@ -44,17 +44,17 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 3. Native Execution Bridge
 
-- [ ] Create a JNI bridge between Kotlin and native curl execution
-  - [ ] Define a request model for invoking curl runs
-  - [ ] Define a response/event model for stdout, stderr, progress, exit, and failures
-  - [ ] Stream stdout incrementally back to Kotlin
-  - [ ] Stream stderr incrementally back to Kotlin
-  - [ ] Surface final exit code
-  - [ ] Surface timing/summary metadata when requested
-- [ ] Add cancellation support
-  - [ ] Define a cancellable native execution handle
-  - [ ] Map UI/service cancellation to native cancellation
-  - [ ] Ensure cancellation is safe during uploads/downloads
+- [x] Create a bridge between Kotlin and embedded native curl execution
+  - [x] Define a request model for invoking curl runs
+  - [x] Define a response/event model for stdout, stderr, progress, exit, and failures
+  - [x] Stream stdout incrementally back to Kotlin
+  - [x] Stream stderr incrementally back to Kotlin
+  - [x] Surface final exit code
+  - [x] Surface timing/summary metadata when requested
+- [x] Add cancellation support
+  - [x] Define a cancellable native execution handle
+  - [x] Map UI/service cancellation to native cancellation
+  - [x] Ensure cancellation is safe during uploads/downloads
 - [ ] Handle lifecycle and error boundaries
   - [ ] Protect against native crashes propagating as silent app failures
   - [ ] Convert native failures into explicit domain errors
@@ -69,11 +69,11 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Accept bare arguments and prepend `curl`
   - [x] Collapse multiline shell-style continuations
   - [x] Preserve quoted tokens correctly
-- [ ] Implement validation
+- [x] Implement validation
   - [x] Detect unclosed quotes before execution
   - [x] Detect empty commands
   - [x] Detect unsupported or misspelled options
-  - [ ] Base unknown-option validation on the actual embedded curl build
+  - [x] Base unknown-option validation on the actual embedded curl build
   - [x] Produce inline user-facing validation messages
 - [x] Define parser behavior for path-bearing arguments
   - [x] Identify file input flags
@@ -154,7 +154,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Execution repository
   - [x] Workspace repository
   - [x] Log/history repository
-- [ ] Add use cases
+- [x] Add use cases
   - [x] Validate curl command
   - [x] Start curl run
   - [x] Observe active curl run
@@ -198,10 +198,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Completion notification
   - [x] Failure notification
   - [x] Cancellation notification where appropriate
-- [ ] Wire cancellation through the full stack
+- [x] Wire cancellation through the full stack
   - [x] UI cancel button
   - [x] Notification cancel action
-  - [ ] Service-to-native cancellation handoff
+  - [x] Service-to-native cancellation handoff
 
 ---
 
@@ -298,7 +298,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 - [ ] Map major failure classes to clear user messages
   - [x] Validation failure
-  - [ ] Unsupported option/build mismatch
+  - [x] Unsupported option/build mismatch
   - [x] Missing workspace file
   - [x] Import/export failure
   - [x] Native runtime failure
@@ -314,8 +314,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 18. Dependency Injection and App Wiring
 
-- [ ] Add Hilt modules for curl components
-  - [ ] Native executor binding
+- [x] Add Hilt modules for curl components
+  - [x] Native executor binding
   - [x] Workspace manager binding
   - [x] Curl repositories/use cases
   - [x] Settings/log persistence bindings
@@ -356,8 +356,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 ## 20. Final Validation and Polish
 
 - [ ] Re-run project validation after implementation
-  - [ ] Run `./gradlew lintDebug`
-  - [ ] Run `./gradlew test`
+  - [x] Run `./gradlew lintDebug`
+  - [x] Run `./gradlew test`
   - [ ] Run any existing Android tests relevant to touched UI/workspace flows
 - [ ] Validate user-visible behavior
   - [ ] Workspace root selection

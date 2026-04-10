@@ -28,11 +28,22 @@ data class CurlExecutionResult(
 )
 
 /**
+ * Resolved embedded curl runtime assets.
+ *
+ * @property executablePath Absolute path to the extracted curl executable.
+ * @property caCertificatePath Absolute path to the extracted CA bundle, if one should be auto-injected.
+ */
+data class CurlRuntime(
+    val executablePath: String,
+    val caCertificatePath: String? = null,
+)
+
+/**
  * Resolves the executable path used to launch curl.
  */
 interface CurlBinaryProvider {
-    /** Returns the executable path or command name to launch curl. */
-    suspend fun getExecutablePath(): String
+    /** Returns the resolved runtime paths needed to launch curl. */
+    suspend fun getRuntime(): CurlRuntime
 }
 
 /**

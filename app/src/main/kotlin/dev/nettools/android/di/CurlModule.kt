@@ -4,12 +4,12 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.nettools.android.data.curl.BundledCurlBinaryProvider
+import dev.nettools.android.data.curl.BundledCurlOptionCatalog
 import dev.nettools.android.data.curl.CurlBinaryProvider
 import dev.nettools.android.data.curl.CurlExecutor
 import dev.nettools.android.data.curl.CurlOptionCatalog
-import dev.nettools.android.data.curl.EmbeddedCurlOptionCatalog
 import dev.nettools.android.data.curl.ProcessCurlExecutor
-import dev.nettools.android.data.curl.SystemCurlBinaryProvider
 import dev.nettools.android.data.workspace.WorkspaceManager
 import dev.nettools.android.domain.repository.WorkspaceRepository
 import javax.inject.Singleton
@@ -22,12 +22,12 @@ import javax.inject.Singleton
 object CurlModule {
 
     /**
-     * Binds [EmbeddedCurlOptionCatalog] as the active [CurlOptionCatalog].
+     * Binds [BundledCurlOptionCatalog] as the active [CurlOptionCatalog].
      */
     @Provides
     @Singleton
     fun provideCurlOptionCatalog(
-        impl: EmbeddedCurlOptionCatalog,
+        impl: BundledCurlOptionCatalog,
     ): CurlOptionCatalog = impl
 
     /**
@@ -40,12 +40,12 @@ object CurlModule {
     ): WorkspaceRepository = impl
 
     /**
-     * Binds [SystemCurlBinaryProvider] as the active [CurlBinaryProvider].
+     * Binds [BundledCurlBinaryProvider] as the active [CurlBinaryProvider].
      */
     @Provides
     @Singleton
     fun provideCurlBinaryProvider(
-        impl: SystemCurlBinaryProvider,
+        impl: BundledCurlBinaryProvider,
     ): CurlBinaryProvider = impl
 
     /**
