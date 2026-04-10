@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
@@ -50,6 +51,12 @@ fun HomeScreen(navController: NavController) {
         ) {
             Spacer(Modifier.height(8.dp))
 
+            NavCard(
+                title = "Curl",
+                subtitle = "Run raw curl commands with live stdout and stderr",
+                icon = { Icon(Icons.Filled.Cloud, contentDescription = null, Modifier.size(36.dp)) },
+                onClick = { navController.navigate(Routes.CURL) },
+            )
             NavCard(
                 title = "SCP Transfer",
                 subtitle = "Upload or download files over SSH",

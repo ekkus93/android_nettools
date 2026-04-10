@@ -144,6 +144,21 @@ class NotificationHelper @Inject constructor(
             .build()
 
     /**
+     * Builds a cancellation notification for a curl run.
+     */
+    fun createCurlCancellationNotification(
+        commandText: String,
+        channelId: String,
+    ): Notification =
+        NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("Curl run cancelled")
+            .setContentText("The command was cancelled.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(commandText))
+            .setAutoCancel(true)
+            .build()
+
+    /**
      * Builds a notification indicating a successful transfer.
      *
      * @param fileName Name of the transferred file.

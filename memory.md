@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T12:31:12Z - GPT-5.4 - Completed curl UI phase
+
+Finished the curl UI slice: added the home-card entry and routes, runner/results/logs/settings/workspace screens, active-run reconnect behavior, completion/failure/cancellation notifications, and settings/log-history controls. Updated `docs/CURL_TODO.md` to mark the completed UI and notification items and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.
+
 ## 2026-04-10T12:05:50Z - GPT-5.4 - Completed curl execution scaffold phase
 
 Finished the second curl implementation slice: added the execution request/result seam, process-backed executor placeholder, curl foreground service, live run holder, notification wiring, and start/observe/cancel/clear-log use cases. Updated `docs/CURL_TODO.md` to mark the execution-layer items that are now truly in place, and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.

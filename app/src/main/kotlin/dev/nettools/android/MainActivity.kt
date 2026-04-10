@@ -14,6 +14,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nettools.android.ui.HomeScreen
+import dev.nettools.android.ui.curl.CurlLogsScreen
+import dev.nettools.android.ui.curl.CurlResultsScreen
+import dev.nettools.android.ui.curl.CurlRunnerScreen
+import dev.nettools.android.ui.curl.CurlSettingsScreen
 import dev.nettools.android.ui.connections.SavedConnectionsScreen
 import dev.nettools.android.ui.history.HistoryScreen
 import dev.nettools.android.ui.navigation.Routes
@@ -21,6 +25,7 @@ import dev.nettools.android.ui.progress.ProgressScreen
 import dev.nettools.android.ui.sftp.SftpBrowserScreen
 import dev.nettools.android.ui.theme.NetToolsTheme
 import dev.nettools.android.ui.transfer.TransferScreen
+import dev.nettools.android.ui.workspace.WorkspaceBrowserScreen
 
 /**
  * Main entry point activity for Android NetTools.
@@ -47,6 +52,25 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Routes.TRANSFER) {
                             TransferScreen(navController = navController)
+                        }
+                        composable(Routes.CURL) {
+                            CurlRunnerScreen(navController = navController)
+                        }
+                        composable(Routes.CURL_LOGS) {
+                            CurlLogsScreen(navController = navController)
+                        }
+                        composable(Routes.CURL_SETTINGS) {
+                            CurlSettingsScreen(navController = navController)
+                        }
+                        composable(Routes.CURL_WORKSPACE) {
+                            WorkspaceBrowserScreen(navController = navController)
+                        }
+                        composable(
+                            route = Routes.CURL_RESULTS,
+                            arguments = listOf(navArgument("runId") { type = NavType.StringType }),
+                        ) { backStackEntry ->
+                            val runId = backStackEntry.arguments?.getString("runId") ?: ""
+                            CurlResultsScreen(runId = runId, navController = navController)
                         }
                         composable(Routes.SFTP_BROWSER) {
                             SftpBrowserScreen(

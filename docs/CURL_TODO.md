@@ -178,28 +178,28 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Enforce 1 MB stderr cap per run
   - [x] Mark truncated output explicitly
   - [x] Preserve metadata when output is truncated
-- [ ] Implement log/history behavior
+- [x] Implement log/history behavior
   - [x] Logging disabled by default
   - [x] Persist logs across runs when enabled
   - [x] Support manual clearing of logs
   - [x] Keep saved command history off by default
-  - [ ] Do not allow editing/exporting saved commands
+  - [x] Do not allow editing/exporting saved commands
 
 ---
 
 ## 10. Background Execution Service
 
-- [ ] Add a foreground service for curl runs or extend the existing background execution model safely
+- [x] Add a foreground service for curl runs or extend the existing background execution model safely
   - [x] Guarantee one active curl job at a time
   - [x] Start foreground execution promptly
-  - [ ] Reconnect UI to active runs after navigation/process recreation where applicable
-- [ ] Implement notifications
+  - [x] Reconnect UI to active runs after navigation/process recreation where applicable
+- [x] Implement notifications
   - [x] Active run notification
-  - [ ] Completion notification
-  - [ ] Failure notification
-  - [ ] Cancellation notification where appropriate
+  - [x] Completion notification
+  - [x] Failure notification
+  - [x] Cancellation notification where appropriate
 - [ ] Wire cancellation through the full stack
-  - [ ] UI cancel button
+  - [x] UI cancel button
   - [x] Notification cancel action
   - [ ] Service-to-native cancellation handoff
 
@@ -223,74 +223,74 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 12. UI — Home and Navigation
 
-- [ ] Add curl entry points to navigation
-  - [ ] Add a Curl route constant
-  - [ ] Add a Workspace Browser route constant
-  - [ ] Add a Curl Logs/History route constant if separate
-- [ ] Update home screen
-  - [ ] Add a Curl card/tile
-  - [ ] Add a sensible icon and subtitle
+- [x] Add curl entry points to navigation
+  - [x] Add a Curl route constant
+  - [x] Add a Workspace Browser route constant
+  - [x] Add a Curl Logs/History route constant if separate
+- [x] Update home screen
+  - [x] Add a Curl card/tile
+  - [x] Add a sensible icon and subtitle
 
 ---
 
 ## 13. UI — Curl Runner Screen
 
-- [ ] Create the main curl execution screen
-  - [ ] Multiline command input
-  - [ ] Run button
-  - [ ] Validation feedback area
-  - [ ] Access point to workspace browser
-  - [ ] Access point to logs/history/settings
-- [ ] Add UX behaviors
-  - [ ] Disable Run while a job is active
-  - [ ] Show current run status
-  - [ ] Preserve draft command across configuration changes
-  - [ ] Handle pasted multiline commands cleanly
+- [x] Create the main curl execution screen
+  - [x] Multiline command input
+  - [x] Run button
+  - [x] Validation feedback area
+  - [x] Access point to workspace browser
+  - [x] Access point to logs/history/settings
+- [x] Add UX behaviors
+  - [x] Disable Run while a job is active
+  - [x] Show current run status
+  - [x] Preserve draft command across configuration changes
+  - [x] Handle pasted multiline commands cleanly
 
 ---
 
 ## 14. UI — Curl Results Screen
 
-- [ ] Build a polished results screen
-  - [ ] Separate stdout and stderr sections
-  - [ ] Show active/completed/failed/cancelled state clearly
-  - [ ] Show optional exit code and timing metadata on demand
-  - [ ] Indicate truncation when output caps are hit
+- [x] Build a polished results screen
+  - [x] Separate stdout and stderr sections
+  - [x] Show active/completed/failed/cancelled state clearly
+  - [x] Show optional exit code and timing metadata on demand
+  - [x] Indicate truncation when output caps are hit
 - [ ] Add actions
-  - [ ] Cancel
-  - [ ] Copy stdout
-  - [ ] Copy stderr
+  - [x] Cancel
+  - [x] Copy stdout
+  - [x] Copy stderr
   - [ ] Save output
-- [ ] Improve readability
-  - [ ] Normalize output presentation for mobile
-  - [ ] Keep stdout/stderr meaningfully distinct
-  - [ ] Avoid losing significant line structure
+- [x] Improve readability
+  - [x] Normalize output presentation for mobile
+  - [x] Keep stdout/stderr meaningfully distinct
+  - [x] Avoid losing significant line structure
 
 ---
 
 ## 15. UI — Logs / History Screen
 
-- [ ] Add a simple first-pass logs/history screen
-  - [ ] List prior runs with status and timestamps
-  - [ ] Show whether logs/output were retained
-  - [ ] Show truncated/non-truncated state
-  - [ ] Allow manual clearing
-- [ ] Keep organization intentionally simple for v1
-  - [ ] Do not overdesign filtering/sorting unless needed to make it usable
-  - [ ] Leave room for later refinement
+- [x] Add a simple first-pass logs/history screen
+  - [x] List prior runs with status and timestamps
+  - [x] Show whether logs/output were retained
+  - [x] Show truncated/non-truncated state
+  - [x] Allow manual clearing
+- [x] Keep organization intentionally simple for v1
+  - [x] Do not overdesign filtering/sorting unless needed to make it usable
+  - [x] Leave room for later refinement
 
 ---
 
 ## 16. UI — Settings and Preferences
 
 - [ ] Add curl-related settings
-  - [ ] Enable/disable logging
-  - [ ] Enable/disable saved command history
+  - [x] Enable/disable logging
+  - [x] Enable/disable saved command history
   - [ ] Select/change workspace root
-  - [ ] Clear logs
-- [ ] Surface consequences of settings
-  - [ ] Warn that enabling logs can persist sensitive command content
-  - [ ] Explain workspace-root behavior clearly
+  - [x] Clear logs
+- [x] Surface consequences of settings
+  - [x] Warn that enabling logs can persist sensitive command content
+  - [x] Explain workspace-root behavior clearly
 
 ---
 
@@ -316,9 +316,9 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 - [ ] Add Hilt modules for curl components
   - [ ] Native executor binding
-  - [ ] Workspace manager binding
-  - [ ] Curl repositories/use cases
-  - [ ] Settings/log persistence bindings
+  - [x] Workspace manager binding
+  - [x] Curl repositories/use cases
+  - [x] Settings/log persistence bindings
 - [ ] Ensure view models remain properly separated from Android framework details where possible
 
 ---

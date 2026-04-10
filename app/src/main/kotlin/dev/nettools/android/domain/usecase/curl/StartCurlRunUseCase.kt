@@ -29,12 +29,14 @@ class StartCurlRunUseCase @Inject constructor(
             return CurlStartResult(errors = parsed.errors)
         }
 
+        val parsedCommand = requireNotNull(parsed.command)
         val settings = settingsRepository.getSettings()
         val runId = UUID.randomUUID().toString()
+        val shouldPersistHistory = settings.saveHistoryEnabled
         val summary = CurlRunSummary(
             id = runId,
-            commandText = input,
-            normalizedCommandText = parsed.command!!.normalizedText,
+            commandText = if (shouldPersistHistory) input else "",
+            normalizedCommandText = if (shouldPersistHistory) parsedCommand.normalizedText else "",
             startedAt = System.currentTimeMillis(),
             status = CurlRunStatus.QUEUED,
             loggingEnabled = settings.loggingEnabled,
@@ -45,7 +47,7 @@ class StartCurlRunUseCase @Inject constructor(
             pendingRun = PendingCurlRunParams(
                 runId = runId,
                 rawCommandText = input,
-                parsedCommand = parsed.command,
+                parsedCommand = parsedCommand,
                 workspaceRootPath = workspaceRepository.getWorkspaceRootPath(),
                 loggingEnabled = settings.loggingEnabled,
                 stdoutByteCap = settings.stdoutBytesCap,

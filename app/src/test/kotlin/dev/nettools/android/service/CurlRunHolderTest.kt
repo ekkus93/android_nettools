@@ -46,12 +46,13 @@ class CurlRunHolderTest {
     fun `start and output update live state`() = testScope.runTest {
         val holder = CurlRunHolder(testScope)
 
-        holder.startRun("run-1")
+        holder.startRun(runId = "run-1", commandText = "curl --version")
         holder.appendOutput(isStdout = true, chunk = "hello")
         holder.updateStatus(status = CurlRunStatus.COMPLETED, exitCode = 0)
 
         val state = holder.liveState.value
         assertEquals("run-1", state.runId)
+        assertEquals("curl --version", state.commandText)
         assertEquals(CurlRunStatus.COMPLETED, state.status)
         assertEquals("hello", state.stdoutText)
         assertEquals(0, state.exitCode)

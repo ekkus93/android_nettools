@@ -1,8 +1,13 @@
 package dev.nettools.android.service
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,6 +32,7 @@ class CurlForegroundService : LifecycleService() {
         const val ACTION_CANCEL = "dev.nettools.android.CANCEL_CURL_RUN"
         const val EXTRA_RUN_ID = "run_id"
         private const val FOREGROUND_NOTIFICATION_ID = 2001
+        private const val TAG = "CurlFgService"
     }
 
     @Inject lateinit var curlRunHolder: CurlRunHolder
@@ -66,7 +72,7 @@ class CurlForegroundService : LifecycleService() {
     }
 
     private suspend fun executeRun(params: PendingCurlRunParams) {
-        curlRunHolder.startRun(params.runId)
+        curlRunHolder.startRun(runId = params.runId, commandText = params.rawCommandText)
         runRepository.updateStatus(params.runId, status = CurlRunStatus.IN_PROGRESS)
         startForeground(
             FOREGROUND_NOTIFICATION_ID,
@@ -107,6 +113,20 @@ class CurlForegroundService : LifecycleService() {
                 durationMillis = result.durationMillis,
             )
             curlRunHolder.updateStatus(status = finalStatus, exitCode = result.exitCode)
+            val notification = if (finalStatus == CurlRunStatus.COMPLETED) {
+                notificationHelper.createCurlCompletionNotification(
+                    commandText = params.rawCommandText,
+                    exitCode = result.exitCode,
+                    channelId = CURL_CHANNEL_ID,
+                )
+            } else {
+                notificationHelper.createCurlFailureNotification(
+                    commandText = params.rawCommandText,
+                    reason = "Exit code: ${result.exitCode}",
+                    channelId = CURL_CHANNEL_ID,
+                )
+            }
+            notifyCompletion(params.runId, notification)
         } catch (e: CancellationException) {
             runRepository.updateStatus(
                 runId = params.runId,
@@ -114,6 +134,13 @@ class CurlForegroundService : LifecycleService() {
                 finishedAt = System.currentTimeMillis(),
             )
             curlRunHolder.updateStatus(status = CurlRunStatus.CANCELLED)
+            notifyCompletion(
+                params.runId,
+                notificationHelper.createCurlCancellationNotification(
+                    commandText = params.rawCommandText,
+                    channelId = CURL_CHANNEL_ID,
+                ),
+            )
             throw e
         } catch (e: Exception) {
             runRepository.updateStatus(
@@ -123,10 +150,32 @@ class CurlForegroundService : LifecycleService() {
             )
             curlRunHolder.appendOutput(isStdout = false, chunk = (e.message ?: "Curl execution failed"))
             curlRunHolder.updateStatus(status = CurlRunStatus.FAILED)
+            notifyCompletion(
+                params.runId,
+                notificationHelper.createCurlFailureNotification(
+                    commandText = params.rawCommandText,
+                    reason = e.message ?: "Curl execution failed",
+                    channelId = CURL_CHANNEL_ID,
+                ),
+            )
         } finally {
             activeRunJob = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
+        }
+    }
+
+    private fun notifyCompletion(runId: String, notification: android.app.Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d(TAG, "Skipping curl completion notification because POST_NOTIFICATIONS is not granted")
+            return
+        }
+        try {
+            NotificationManagerCompat.from(this).notify(runId.hashCode(), notification)
+        } catch (e: SecurityException) {
+            Log.d(TAG, "Unable to post curl completion notification", e)
         }
     }
 
