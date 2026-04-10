@@ -76,6 +76,74 @@ class NotificationHelper @Inject constructor(
             .build()
 
     /**
+     * Builds a progress notification for an active curl run.
+     *
+     * @param runId Unique curl run identifier.
+     * @param commandText Command currently being executed.
+     * @param statusText Short status message.
+     * @param channelId Notification channel ID.
+     * @return A [Notification] suitable for a foreground curl service.
+     */
+    fun createCurlProgressNotification(
+        runId: String,
+        commandText: String,
+        statusText: String,
+        channelId: String,
+    ): Notification {
+        val cancelIntent = Intent(context, CurlForegroundService::class.java).apply {
+            action = CurlForegroundService.ACTION_CANCEL
+            putExtra(CurlForegroundService.EXTRA_RUN_ID, runId)
+        }
+        val cancelPi = android.app.PendingIntent.getService(
+            context,
+            runId.hashCode(),
+            cancelIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        return NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setContentTitle("Running curl")
+            .setContentText(statusText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(commandText))
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelPi)
+            .build()
+    }
+
+    /**
+     * Builds a completion notification for a curl run.
+     */
+    fun createCurlCompletionNotification(
+        commandText: String,
+        exitCode: Int,
+        channelId: String,
+    ): Notification =
+        NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentTitle("Curl run complete")
+            .setContentText("Exit code: $exitCode")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(commandText))
+            .setAutoCancel(true)
+            .build()
+
+    /**
+     * Builds a failure notification for a curl run.
+     */
+    fun createCurlFailureNotification(
+        commandText: String,
+        reason: String,
+        channelId: String,
+    ): Notification =
+        NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("Curl run failed")
+            .setContentText(reason)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(commandText))
+            .setAutoCancel(true)
+            .build()
+
+    /**
      * Builds a notification indicating a successful transfer.
      *
      * @param fileName Name of the transferred file.

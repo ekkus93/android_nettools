@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T12:05:50Z - GPT-5.4 - Completed curl execution scaffold phase
+
+Finished the second curl implementation slice: added the execution request/result seam, process-backed executor placeholder, curl foreground service, live run holder, notification wiring, and start/observe/cancel/clear-log use cases. Updated `docs/CURL_TODO.md` to mark the execution-layer items that are now truly in place, and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.
+
 ## 2026-04-10T11:48:33Z - GPT-5.4 - Completed curl foundation phase and started execution phase
 
 Implemented the first curl foundation slice: NDK/CMake/native-bridge scaffolding, curl domain and repository models, Room persistence for curl runs/settings, workspace path management, parser/validation groundwork, DI bindings, and unit tests. Updated `docs/CURL_TODO.md` to mark the completed foundation items and moved session tracking from phase 1 to phase 2.

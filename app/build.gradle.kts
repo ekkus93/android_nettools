@@ -125,11 +125,15 @@ dependencies {
     // Hilt DI
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
+    kaptTest(libs.hilt.android.compiler)
+    kaptAndroidTest(libs.hilt.android.compiler)
 
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.compiler)
+    kaptTest(libs.androidx.room.compiler)
+    kaptAndroidTest(libs.androidx.room.compiler)
 
     // Security
     implementation(libs.androidx.security.crypto)

@@ -155,12 +155,12 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Workspace repository
   - [x] Log/history repository
 - [ ] Add use cases
-  - [ ] Validate curl command
-  - [ ] Start curl run
-  - [ ] Observe active curl run
-  - [ ] Cancel active curl run
+  - [x] Validate curl command
+  - [x] Start curl run
+  - [x] Observe active curl run
+  - [x] Cancel active curl run
   - [ ] Save output/logs
-  - [ ] Clear logs
+  - [x] Clear logs
   - [ ] Import/export workspace files
 
 ---
@@ -180,8 +180,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Preserve metadata when output is truncated
 - [ ] Implement log/history behavior
   - [x] Logging disabled by default
-  - [ ] Persist logs across runs when enabled
-  - [ ] Support manual clearing of logs
+  - [x] Persist logs across runs when enabled
+  - [x] Support manual clearing of logs
   - [x] Keep saved command history off by default
   - [ ] Do not allow editing/exporting saved commands
 
@@ -190,17 +190,17 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 ## 10. Background Execution Service
 
 - [ ] Add a foreground service for curl runs or extend the existing background execution model safely
-  - [ ] Guarantee one active curl job at a time
-  - [ ] Start foreground execution promptly
+  - [x] Guarantee one active curl job at a time
+  - [x] Start foreground execution promptly
   - [ ] Reconnect UI to active runs after navigation/process recreation where applicable
 - [ ] Implement notifications
-  - [ ] Active run notification
+  - [x] Active run notification
   - [ ] Completion notification
   - [ ] Failure notification
   - [ ] Cancellation notification where appropriate
 - [ ] Wire cancellation through the full stack
   - [ ] UI cancel button
-  - [ ] Notification cancel action
+  - [x] Notification cancel action
   - [ ] Service-to-native cancellation handoff
 
 ---
