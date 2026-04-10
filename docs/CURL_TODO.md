@@ -283,10 +283,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 16. UI — Settings and Preferences
 
-- [ ] Add curl-related settings
+- [x] Add curl-related settings
   - [x] Enable/disable logging
   - [x] Enable/disable saved command history
-  - [ ] Select/change workspace root
+  - [x] Use a fixed app-private workspace root in v1
   - [x] Clear logs
 - [x] Surface consequences of settings
   - [x] Warn that enabling logs can persist sensitive command content

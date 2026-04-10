@@ -60,8 +60,8 @@ Allow the user to paste and run raw curl commands using an embedded libcurl-base
 
 #### 5. Workspace and Local Files
 
-- Local file handling is rooted in a single global workspace directory.
-- The workspace root is user-selectable.
+- Local file handling is rooted in a single global app-private workspace directory for v1.
+- The workspace root is not user-selectable in v1; users move files in and out through Android pickers.
 - Unix-style local paths in curl commands are interpreted relative to this workspace model.
 - The user must be able to import files into the workspace via Android file pickers.
 - The user must be able to export files from the workspace via Android file pickers.
@@ -101,7 +101,7 @@ Allow the user to paste and run raw curl commands using an embedded libcurl-base
 | **Compatibility** | Android 8.0 (API 26) and above. |
 | **Execution model** | Use embedded native curl/libcurl rather than reimplementing curl behavior in Kotlin. |
 | **Concurrency** | One active curl job at a time. |
-| **Storage model** | Use a single app-managed workspace root for local file semantics. |
+| **Storage model** | Use a single app-private app-managed workspace root for local file semantics. |
 | **Performance** | Stream output and file data; avoid unnecessary full-file in-memory buffering. |
 | **Safety** | Logging is opt-in and disabled by default. |
 | **Error handling** | Surface validation, execution, cancellation, cleanup, and packaging/runtime errors clearly. |

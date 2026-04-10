@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T17:10:53Z - GPT-5.4 - User chose fixed app-private curl workspace for v1
+
+For the remaining workspace-root design, the user chose a v1 that keeps curl’s workspace as a fixed app-private root and relies on Android pickers for import/export around that root instead of trying to use arbitrary SAF folder URIs as native curl filesystem paths. Updated the curl spec/TODO docs to reflect that the app-private workspace model is intentional rather than a temporary gap.
+
 ## 2026-04-10T14:16:10Z - GPT-5.4 - Added cleanup outcome tracking for curl runs
 
 Finished the cleanup-observability slice by recording cleanup outcome state (`skipped`, `succeeded`, or `failed`) for curl runs, persisting it through Room, surfacing it in live state, and showing it on the results screen alongside any cleanup warning text. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the cleanup observability items done.
