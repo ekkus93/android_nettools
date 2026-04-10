@@ -211,10 +211,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Delete failed/partial downloads
   - [x] Delete cancelled partial downloads
   - [x] Ensure local temp/work files are not leaked
-- [ ] Define remote cleanup behavior in code
-  - [ ] Attempt best-effort cleanup of remote partial uploads
-  - [ ] Surface a warning if remote cleanup fails
-  - [ ] Ensure cancellation and failure paths both try cleanup
+- [x] Define remote cleanup behavior in code
+  - [x] Attempt best-effort cleanup of remote partial uploads
+  - [x] Surface a warning if remote cleanup fails
+  - [x] Ensure cancellation and failure paths both try cleanup
 - [x] Add cleanup observability
   - [x] Record whether cleanup succeeded, failed, or was skipped
   - [x] Surface cleanup warnings in a user-friendly form
@@ -296,7 +296,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 17. Error Handling
 
-- [ ] Map major failure classes to clear user messages
+- [x] Map major failure classes to clear user messages
   - [x] Validation failure
   - [x] Unsupported option/build mismatch
   - [x] Missing workspace file
@@ -304,8 +304,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Native runtime failure
   - [x] TLS/certificate failure surfaced by curl
   - [x] Cancellation
-  - [ ] Partial remote cleanup failure
-- [ ] Ensure no silent failures
+  - [x] Partial remote cleanup failure
+- [x] Ensure no silent failures
   - [x] Service cleanup paths
   - [x] Native bridge teardown
   - [x] Workspace import/export operations

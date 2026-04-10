@@ -32,22 +32,10 @@ class ProcessCurlExecutor @Inject constructor(
         onOutput: suspend (CurlOutputChunk) -> Unit,
     ): CurlExecutionResult = coroutineScope {
         val runtime = binaryProvider.getRuntime()
-        val command = buildList {
-            add(runtime.executablePath)
-            if (runtime.caCertificatePath != null && request.parsedCommand.tokens.none { token ->
-                    token == "--cacert" ||
-                        token.startsWith("--cacert=") ||
-                        token == "--capath" ||
-                        token.startsWith("--capath=") ||
-                        token == "--insecure" ||
-                        token == "-k"
-                }
-            ) {
-                add("--cacert")
-                add(runtime.caCertificatePath)
-            }
-            addAll(request.parsedCommand.tokens.drop(1))
-        }
+        val command = buildProcessCommandLine(
+            runtime = runtime,
+            tokens = request.parsedCommand.tokens,
+        )
         val process = ProcessBuilder(command)
             .directory(java.io.File(request.workspaceDirectory))
             .redirectErrorStream(false)

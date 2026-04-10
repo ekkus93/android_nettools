@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T18:00:33Z - GPT-5.4 - Completed remote curl cleanup handling
+
+Finished the remote-cleanup slice by adding shared embedded-curl command-line construction, planning best-effort remote partial-upload cleanup for HTTP(S), FTP(S), and SFTP uploads, and invoking that cleanup from both failure and cancellation paths alongside local cleanup. The user-facing formatter now surfaces explicit warnings when remote cleanup cannot be completed, targeted unit coverage was added for the planner/executor behavior, and `docs/CURL_TODO.md` was updated to mark the remote-cleanup and related error-handling items done after a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
+
 ## 2026-04-10T17:50:08Z - GPT-5.4 - Migrated curl annotation processing to KSP and hardened runtime installs
 
 Finished the next curl maintenance slice by migrating the app module from kapt to KSP for both Hilt and Room so full validation no longer emits the unrecognized processor-option warning on real annotation-processing runs. In the same slice, the bundled curl runtime installer now writes through a temporary file and renames atomically so failed asset extraction does not leave partial runtime files behind, and `docs/CURL_TODO.md` was updated to mark local cleanup and unit-test coverage complete.

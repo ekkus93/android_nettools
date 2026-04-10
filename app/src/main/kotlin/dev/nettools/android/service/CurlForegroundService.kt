@@ -14,13 +14,18 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.nettools.android.data.curl.CurlCommandWorkspaceAdapter
 import dev.nettools.android.data.curl.CurlExecutionRequest
 import dev.nettools.android.data.curl.CurlExecutor
+import dev.nettools.android.data.curl.CurlRemoteCleanupExecutor
+import dev.nettools.android.data.curl.CurlRemoteCleanupPlanner
+import dev.nettools.android.data.curl.CurlCleanupResult
 import dev.nettools.android.domain.model.CurlOutputStream
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.repository.CurlRunRepository
 import dev.nettools.android.util.CurlUserMessageFormatter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -42,6 +47,8 @@ class CurlForegroundService : LifecycleService() {
     @Inject lateinit var notificationHelper: NotificationHelper
     @Inject lateinit var workspaceAdapter: CurlCommandWorkspaceAdapter
     @Inject lateinit var curlExecutor: CurlExecutor
+    @Inject lateinit var remoteCleanupPlanner: CurlRemoteCleanupPlanner
+    @Inject lateinit var remoteCleanupExecutor: CurlRemoteCleanupExecutor
 
     private var activeRunJob: Job? = null
 
@@ -157,7 +164,9 @@ class CurlForegroundService : LifecycleService() {
                     byteCap = params.stderrByteCap,
                 )
             }
-            val cleanupResult = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
+            val cleanupResult = withContext(NonCancellable) {
+                performCleanup(preparedCommand.command, preparedCommand, params.workspaceRootPath)
+            }
             runRepository.updateStatus(
                 runId = params.runId,
                 status = CurlRunStatus.CANCELLED,
@@ -181,7 +190,7 @@ class CurlForegroundService : LifecycleService() {
             throw e
         } catch (e: Exception) {
             val failureReason = CurlUserMessageFormatter.executionFailure(e)
-            val cleanupResult = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
+            val cleanupResult = performCleanup(preparedCommand.command, preparedCommand, params.workspaceRootPath)
             runRepository.updateStatus(
                 runId = params.runId,
                 status = CurlRunStatus.FAILED,
@@ -209,6 +218,35 @@ class CurlForegroundService : LifecycleService() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
+    }
+
+    private suspend fun performCleanup(
+        command: dev.nettools.android.domain.model.ParsedCurlCommand,
+        preparedCommand: dev.nettools.android.data.curl.PreparedCurlCommand,
+        workspaceRootPath: String,
+    ): CurlCleanupResult {
+        val localCleanup = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
+        val remoteCleanup = remoteCleanupPlanner.plan(command)?.let { plan ->
+            remoteCleanupExecutor.execute(plan = plan, workspaceDirectory = workspaceRootPath)
+        } ?: CurlCleanupResult(status = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED)
+
+        val warnings = listOfNotNull(localCleanup.warning, remoteCleanup.warning)
+        val status = when {
+            localCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.FAILED ||
+                remoteCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.FAILED ->
+                dev.nettools.android.domain.model.CurlCleanupStatus.FAILED
+
+            localCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED ||
+                remoteCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED ->
+                dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED
+
+            else -> dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED
+        }
+
+        return CurlCleanupResult(
+            status = status,
+            warning = warnings.takeIf { it.isNotEmpty() }?.joinToString(separator = "\n"),
+        )
     }
 
     private fun notifyCompletion(runId: String, notification: android.app.Notification) {

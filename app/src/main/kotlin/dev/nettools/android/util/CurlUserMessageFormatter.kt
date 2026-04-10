@@ -13,6 +13,12 @@ object CurlUserMessageFormatter {
     /** Returns the standard user-facing message when runtime metadata cannot be loaded. */
     fun runtimeMetadataUnavailable(): String = "Bundled curl runtime metadata is unavailable on this build."
 
+    /** Returns a user-facing warning for partial remote cleanup failures. */
+    fun remoteCleanupFailure(details: String): String {
+        val suffix = details.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+        return "Curl could not confirm remote partial-upload cleanup.$suffix"
+    }
+
     /**
      * Maps an execution-layer [error] into a user-facing message.
      */
