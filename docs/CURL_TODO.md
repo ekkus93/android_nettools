@@ -207,10 +207,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 11. Cleanup and Partial-File Handling
 
-- [ ] Define local cleanup behavior in code
+- [x] Define local cleanup behavior in code
   - [x] Delete failed/partial downloads
   - [x] Delete cancelled partial downloads
-  - [ ] Ensure local temp/work files are not leaked
+  - [x] Ensure local temp/work files are not leaked
 - [ ] Define remote cleanup behavior in code
   - [ ] Attempt best-effort cleanup of remote partial uploads
   - [ ] Surface a warning if remote cleanup fails
@@ -325,7 +325,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 19. Testing
 
-- [ ] Unit tests
+- [x] Unit tests
   - [x] Command preprocessing for `curl ...` vs bare args
   - [x] Multiline continuation parsing
   - [x] Unclosed-quote validation

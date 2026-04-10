@@ -1,12 +1,9 @@
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
-import org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.kotlin.ksp)
 }
 
 android {
@@ -127,12 +124,12 @@ dependencies {
 
     // Hilt DI
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
+    ksp(libs.hilt.android.compiler)
 
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // Security
     implementation(libs.androidx.security.crypto)
@@ -163,22 +160,6 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
 }
 
-kapt {
-    correctErrorTypes = true
-}
-
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-tasks.withType<KaptGenerateStubsTask>().configureEach {
-    if (name.contains("UnitTest")) {
-        enabled = false
-    }
-}
-
-tasks.withType<KaptWithoutKotlincTask>().configureEach {
-    if (name.contains("UnitTest")) {
-        enabled = false
-    }
 }

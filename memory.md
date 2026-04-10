@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T17:50:08Z - GPT-5.4 - Migrated curl annotation processing to KSP and hardened runtime installs
+
+Finished the next curl maintenance slice by migrating the app module from kapt to KSP for both Hilt and Room so full validation no longer emits the unrecognized processor-option warning on real annotation-processing runs. In the same slice, the bundled curl runtime installer now writes through a temporary file and renames atomically so failed asset extraction does not leave partial runtime files behind, and `docs/CURL_TODO.md` was updated to mark local cleanup and unit-test coverage complete.
+
 ## 2026-04-10T17:31:03Z - GPT-5.4 - Hardened bundled curl metadata loading
 
 Finished the native-metadata resilience slice by removing eager bridge initialization from app startup, switching settings metadata reads to an explicit availability result, showing a user-facing runtime error instead of crashing when metadata cannot load, and cleaning up libcurl global state immediately after each metadata snapshot. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the lifecycle/error-boundary and native-bridge-teardown items done.

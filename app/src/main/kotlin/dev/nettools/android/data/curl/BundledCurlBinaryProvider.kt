@@ -46,17 +46,13 @@ class BundledCurlBinaryProvider @Inject constructor(
         targetFile: File,
         executable: Boolean,
     ): File {
-        if (!targetFile.exists()) {
-            targetFile.parentFile?.mkdirs()
+        return installFileAtomically(
+            targetFile = targetFile,
+            executable = executable,
+        ) { output ->
             context.assets.open(assetPath).use { input ->
-                targetFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            if (executable && !targetFile.setExecutable(true, false)) {
-                error("Unable to mark bundled curl runtime as executable.")
+                input.copyTo(output)
             }
         }
-        return targetFile
     }
 }
