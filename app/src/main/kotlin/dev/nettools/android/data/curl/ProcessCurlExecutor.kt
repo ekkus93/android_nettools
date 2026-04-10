@@ -4,6 +4,7 @@ import dev.nettools.android.domain.model.CurlOutputChunk
 import dev.nettools.android.domain.model.CurlOutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -58,11 +59,16 @@ class ProcessCurlExecutor @Inject constructor(
             )
         } catch (e: CancellationException) {
             process.destroy()
-            withContext(Dispatchers.IO) {
+            withContext(NonCancellable + Dispatchers.IO) {
                 if (!process.waitFor(1, TimeUnit.SECONDS)) {
                     process.destroyForcibly()
+                    process.waitFor(1, TimeUnit.SECONDS)
                 }
+                process.inputStream.close()
+                process.errorStream.close()
+                process.outputStream.close()
             }
+            withContext(NonCancellable) { joinAll(stdoutJob, stderrJob) }
             throw e
         }
     }

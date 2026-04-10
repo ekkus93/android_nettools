@@ -335,12 +335,12 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Output-cap truncation behavior
   - [x] Cleanup decision logic
 - [ ] Integration tests
-  - [ ] Native bridge happy-path execution
+  - [x] Native bridge happy-path execution
   - [ ] Cancellation during active run
-  - [ ] Download cleanup on failure
-  - [ ] Remote partial-upload cleanup attempt on cancellation/failure
-  - [ ] Logging enabled vs disabled persistence behavior
-  - [ ] Workspace import/export flows
+  - [x] Download cleanup on failure
+  - [x] Remote partial-upload cleanup attempt on cancellation/failure
+  - [x] Logging enabled vs disabled persistence behavior
+  - [x] Workspace import/export flows
 - [ ] UI tests
   - [ ] Run a valid command end-to-end through the UI
   - [ ] Validation error display for malformed commands

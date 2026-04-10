@@ -1,7 +1,12 @@
 package dev.nettools.android.data.workspace
 
 import android.content.Context
+import dev.nettools.android.data.curl.CurlCommandWorkspaceAdapter
 import dev.nettools.android.domain.model.CurlSettings
+import dev.nettools.android.domain.model.CurlCleanupStatus
+import dev.nettools.android.domain.model.CurlPathReferenceRole
+import dev.nettools.android.domain.model.ParsedCurlCommand
+import dev.nettools.android.domain.model.ParsedCurlPathReference
 import dev.nettools.android.domain.repository.CurlSettingsRepository
 import io.mockk.coEvery
 import io.mockk.every
@@ -90,6 +95,40 @@ class WorkspaceManagerTest {
         val output = ByteArrayOutputStream()
         manager.exportFile(path = imported.path, outputStream = output)
         assertEquals("hello workspace", output.toString())
+    }
+
+    @Test
+    fun `workspace-backed download cleanup removes failed partial outputs`() = runTest {
+        every { context.filesDir } returns tempDir.toFile()
+        coEvery { settingsRepository.getSettings() } returns CurlSettings(
+            workspaceRootPath = tempDir.resolve("workspace").toString(),
+        )
+        val manager = WorkspaceManager(context, settingsRepository)
+        manager.createDirectory("/downloads")
+        val adapter = CurlCommandWorkspaceAdapter(manager)
+        val command = ParsedCurlCommand(
+            originalText = "curl --output /downloads/out.txt https://example.com/file.txt",
+            normalizedText = "curl --output /downloads/out.txt https://example.com/file.txt",
+            tokens = listOf("curl", "--output", "/downloads/out.txt", "https://example.com/file.txt"),
+            pathReferences = listOf(
+                ParsedCurlPathReference(
+                    originalPath = "/downloads/out.txt",
+                    normalizedPath = "/downloads/out.txt",
+                    role = CurlPathReferenceRole.OUTPUT_FILE,
+                ),
+            ),
+        )
+
+        val prepared = adapter.prepareForExecution(command)
+        val partialFile = java.io.File(prepared.cleanupTargets.single()).apply {
+            parentFile?.mkdirs()
+            writeText("partial download")
+        }
+
+        val result = adapter.cleanupPartialOutputs(prepared)
+
+        assertEquals(CurlCleanupStatus.SUCCEEDED, result.status)
+        assertFalse(partialFile.exists())
     }
 
     @Test

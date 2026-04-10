@@ -127,6 +127,44 @@ class CurlRemoteCleanupTest {
         assertTrue(warning.contains("cleanup failed"))
     }
 
+    @Test
+    fun `executor runs planned cleanup commands through the bundled runtime`() = kotlinx.coroutines.test.runTest {
+        val logFile = tempDir.resolve("cleanup.log").toFile()
+        val script = tempDir.resolve("cleanup-success.sh").toFile().apply {
+            writeText(
+                """
+                #!/bin/sh
+                printf '%s\n' "$@" >> "${logFile.absolutePath}"
+                exit 0
+                """.trimIndent(),
+            )
+            setExecutable(true)
+        }
+        val executor = CurlRemoteCleanupExecutor(
+            binaryProvider = object : CurlBinaryProvider {
+                override suspend fun getRuntime(): CurlRuntime = CurlRuntime(executablePath = script.absolutePath)
+            },
+        )
+        val plan = requireNotNull(
+            planner.plan(
+                command = commandOf(
+                    "curl",
+                    "-T",
+                    "/workspace/upload.txt",
+                    "https://example.com/uploads/upload.txt",
+                ),
+            ),
+        )
+
+        val result = executor.execute(plan = plan, workspaceDirectory = tempDir.toString())
+
+        assertEquals(CurlCleanupStatus.SUCCEEDED, result.status)
+        assertEquals(
+            listOf("--request", "DELETE", "https://example.com/uploads/upload.txt"),
+            logFile.readLines(),
+        )
+    }
+
     private fun commandOf(vararg tokens: String): ParsedCurlCommand = ParsedCurlCommand(
         originalText = tokens.joinToString(separator = " "),
         normalizedText = tokens.joinToString(separator = " "),

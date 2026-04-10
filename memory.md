@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T18:39:40Z - GPT-5.4 - Expanded curl integration coverage and hardened executor cancellation cleanup
+
+Added the next curl validation slice with integration-style coverage for real embedded process execution, settings-driven history/log persistence, workspace-backed failed-download cleanup, remote partial-upload cleanup command execution, and workspace import/export flows. In the same slice, `ProcessCurlExecutor` cancellation cleanup was hardened to destroy the process inside a `NonCancellable` block, close all pipes, and wait for the stdout/stderr reader jobs so cancellation cannot strand blocked readers; the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
+
 ## 2026-04-10T18:16:33Z - GPT-5.4 - Decoupled curl viewmodels from Android service and SAF plumbing
 
 Closed the remaining curl ViewModel-separation follow-up by moving foreground-service startup into `DispatchPendingCurlRunUseCase` and picker-document import/export handling into dedicated Android-bound use cases, leaving `CurlRunnerViewModel` and `WorkspaceBrowserViewModel` free of direct `Context` or `ContentResolver` dependencies. This slice also fixed a workspace-browser bug where operation errors were being cleared during reload, added new unit tests for both ViewModels, and passed `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
