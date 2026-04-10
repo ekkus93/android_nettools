@@ -37,6 +37,7 @@ interface CurlRunRepository {
         exitCode: Int? = null,
         durationMillis: Long? = null,
         cleanupWarning: String? = null,
+        effectiveCommandText: String? = null,
     )
 
     /** Deletes all stored curl runs and retained output. */

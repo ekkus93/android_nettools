@@ -126,17 +126,17 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 7. Curl File Semantics
 
-- [ ] Define the supported file-argument translation layer
+- [x] Define the supported file-argument translation layer
   - [x] Handle local upload-style references
   - [x] Handle local download-style references
   - [x] Handle explicit output-file arguments
   - [x] Handle config-file arguments if present
   - [x] Handle common `@file` payload patterns
-- [ ] Implement translation from pasted command to executable local paths
+- [x] Implement translation from pasted command to executable local paths
   - [x] Rewrite workspace-rooted paths for native execution
-  - [ ] Preserve the visible user command or clearly show the effective path mapping
-  - [ ] Ensure translation is reversible enough for good error messages
-- [ ] Validate file existence/intent when possible
+  - [x] Preserve the visible user command or clearly show the effective path mapping
+  - [x] Ensure translation is reversible enough for good error messages
+- [x] Validate file existence/intent when possible
   - [x] Catch obviously missing local input files before run
   - [x] Catch obviously invalid destination patterns before run
 

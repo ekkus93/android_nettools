@@ -54,6 +54,10 @@ class CurlCommandWorkspaceAdapterTest {
 
         assertEquals("@${tempDir.resolve("payload.json")}", prepared.command.tokens[2])
         assertEquals(outputPath.absolutePath, prepared.command.tokens[4])
+        assertEquals(
+            "curl --data @${tempDir.resolve("payload.json")} --output ${outputPath.absolutePath} https://example.com",
+            prepared.effectiveCommandText,
+        )
         assertEquals(listOf(outputPath.absolutePath), prepared.cleanupTargets)
         assertEquals(outputPath.absolutePath, prepared.localPathMap["/downloads/out.txt"])
     }

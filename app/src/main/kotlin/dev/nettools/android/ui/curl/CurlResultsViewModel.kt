@@ -26,6 +26,7 @@ import javax.inject.Inject
 data class CurlResultsUiState(
     val runId: String = "",
     val commandText: String = "",
+    val effectiveCommandText: String? = null,
     val status: CurlRunStatus? = null,
     val stdoutText: String = "",
     val stderrText: String = "",
@@ -118,11 +119,17 @@ private fun CurlRunRecord?.toUiState(
         !summary?.commandText.isNullOrBlank() -> requireNotNull(summary).commandText
         else -> "Command hidden because saved command history is disabled."
     }
+    val effectiveCommandText = when {
+        isLive && !liveState.effectiveCommandText.isNullOrBlank() -> liveState.effectiveCommandText
+        !summary?.effectiveCommandText.isNullOrBlank() -> requireNotNull(summary).effectiveCommandText
+        else -> null
+    }
 
     if (summary == null && !isLive) {
         return CurlResultsUiState(
             runId = runId,
             commandText = commandText,
+            effectiveCommandText = effectiveCommandText,
             isMissing = true,
         )
     }
@@ -130,6 +137,7 @@ private fun CurlRunRecord?.toUiState(
     return CurlResultsUiState(
         runId = runId,
         commandText = commandText,
+        effectiveCommandText = effectiveCommandText,
         status = if (isLive) liveState.status ?: summary?.status else summary?.status,
         stdoutText = if (isLive) liveState.stdoutText else output?.stdoutText.orEmpty(),
         stderrText = if (isLive) liveState.stderrText else output?.stderrText.orEmpty(),

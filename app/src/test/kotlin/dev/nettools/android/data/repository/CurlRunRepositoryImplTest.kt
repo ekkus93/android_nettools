@@ -33,6 +33,7 @@ class CurlRunRepositoryImplTest {
                 CurlRunEntity(
                     id = "run-1",
                     commandText = "curl https://example.com",
+                    effectiveCommandText = "curl https://example.com",
                     normalizedCommandText = "curl https://example.com",
                     startedAt = 1L,
                     finishedAt = 2L,
@@ -101,6 +102,7 @@ class CurlRunRepositoryImplTest {
         coEvery { runDao.getById("run-1") } returns CurlRunEntity(
             id = "run-1",
             commandText = "curl https://example.com",
+            effectiveCommandText = null,
             normalizedCommandText = "curl https://example.com",
             startedAt = 1L,
             finishedAt = null,

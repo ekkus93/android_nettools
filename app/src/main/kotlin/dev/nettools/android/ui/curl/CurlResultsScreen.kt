@@ -117,7 +117,11 @@ fun CurlResultsScreen(
             )
 
             if (showMetadata) {
-                MetadataCard(state = state)
+                MetadataCard(
+                    state = state,
+                    showEffectiveCommand = !state.effectiveCommandText.isNullOrBlank() &&
+                        state.effectiveCommandText != state.commandText,
+                )
             }
 
             state.cleanupWarning?.let { warning ->
@@ -194,7 +198,10 @@ private fun StatusCard(
 }
 
 @Composable
-private fun MetadataCard(state: CurlResultsUiState) {
+private fun MetadataCard(
+    state: CurlResultsUiState,
+    showEffectiveCommand: Boolean,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -204,6 +211,19 @@ private fun MetadataCard(state: CurlResultsUiState) {
             DetailLine("Status", state.status.toDisplayLabel())
             DetailLine("Exit code", state.exitCode?.toString() ?: "Unavailable")
             DetailLine("Duration", state.durationMillis.toDurationLabel())
+            if (showEffectiveCommand) {
+                Text(
+                    text = "Executed command",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SelectionContainer {
+                    Text(
+                        text = state.effectiveCommandText.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    )
+                }
+            }
         }
     }
 }

@@ -42,6 +42,7 @@ data class CurlSettings(
  *
  * @property id Unique run identifier.
  * @property commandText User-entered command text.
+ * @property effectiveCommandText Rewritten command text actually executed after workspace path mapping.
  * @property normalizedCommandText Command text after preprocessing.
  * @property startedAt Epoch-millis start time.
  * @property finishedAt Epoch-millis finish time, if complete.
@@ -54,6 +55,7 @@ data class CurlSettings(
 data class CurlRunSummary(
     val id: String,
     val commandText: String,
+    val effectiveCommandText: String? = null,
     val normalizedCommandText: String,
     val startedAt: Long,
     val finishedAt: Long? = null,

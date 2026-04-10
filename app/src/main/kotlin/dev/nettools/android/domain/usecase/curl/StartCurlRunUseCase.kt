@@ -42,6 +42,7 @@ class StartCurlRunUseCase @Inject constructor(
         val summary = CurlRunSummary(
             id = runId,
             commandText = if (shouldPersistHistory) input else "",
+            effectiveCommandText = null,
             normalizedCommandText = if (shouldPersistHistory) parsedCommand.normalizedText else "",
             startedAt = System.currentTimeMillis(),
             status = CurlRunStatus.QUEUED,

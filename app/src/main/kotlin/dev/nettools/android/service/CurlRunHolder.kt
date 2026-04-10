@@ -46,12 +46,13 @@ class CurlRunHolder @Inject constructor(
         pendingRunParams.also { pendingRunParams = null }
 
     /** Marks a curl run as active and clears previous live output. */
-    fun startRun(runId: String, commandText: String) {
+    fun startRun(runId: String, commandText: String, effectiveCommandText: String) {
         _activeRunId.value = runId
         _cancelRequestedRunId.value = null
         _liveState.value = CurlLiveRunState(
             runId = runId,
             commandText = commandText,
+            effectiveCommandText = effectiveCommandText,
             status = CurlRunStatus.IN_PROGRESS,
         )
     }
@@ -94,6 +95,7 @@ class CurlRunHolder @Inject constructor(
 data class CurlLiveRunState(
     val runId: String? = null,
     val commandText: String = "",
+    val effectiveCommandText: String? = null,
     val status: CurlRunStatus? = null,
     val stdoutText: String = "",
     val stderrText: String = "",

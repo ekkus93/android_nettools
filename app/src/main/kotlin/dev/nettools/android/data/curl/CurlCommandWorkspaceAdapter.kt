@@ -126,4 +126,20 @@ data class PreparedCurlCommand(
     val command: ParsedCurlCommand,
     val cleanupTargets: List<String>,
     val localPathMap: Map<String, String>,
-)
+) {
+    /** Human-readable command text representing the rewritten executable invocation. */
+    val effectiveCommandText: String
+        get() = command.tokens.joinToString(separator = " ") { token -> token.toDisplayToken() }
+}
+
+private fun String.toDisplayToken(): String {
+    if (isEmpty()) return "''"
+    val safe = all { char ->
+        char.isLetterOrDigit() || char in setOf('-', '_', '.', '/', ':', '@', '=', '+', ',')
+    }
+    return if (safe) {
+        this
+    } else {
+        "'" + replace("'", "'\\''") + "'"
+    }
+}

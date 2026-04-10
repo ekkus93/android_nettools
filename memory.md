@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T14:00:20Z - GPT-5.4 - Added persisted effective curl command metadata
+
+Finished the next curl slice by persisting the rewritten effective command text alongside the original user-entered command, exposing it through live run state and the results metadata UI so workspace path rewriting is visible instead of opaque. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the remaining file-translation visibility items done.
+
 ## 2026-04-10T13:44:36Z - GPT-5.4 - Completed embedded curl runtime phase
 
 Finished the embedded curl runtime slice by replacing the placeholder PATH-based runtime with bundled per-ABI curl executables plus generated OpenSSL/nghttp2/libcurl prebuilts, wiring DI to the bundled runtime and option catalog, and linking the JNI bridge against the compiled libcurl build for real version/protocol/feature metadata. `scripts/build_native_deps.sh` now generates release assets for `arm64-v8a` and `armeabi-v7a`, debug assets for `x86_64`, and the full app validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug`.

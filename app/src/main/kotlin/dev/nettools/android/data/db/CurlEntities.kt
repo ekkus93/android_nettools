@@ -15,6 +15,7 @@ import dev.nettools.android.domain.model.CurlSettings
 data class CurlRunEntity(
     @PrimaryKey val id: String,
     val commandText: String,
+    val effectiveCommandText: String?,
     val normalizedCommandText: String,
     val startedAt: Long,
     val finishedAt: Long?,
@@ -28,6 +29,7 @@ data class CurlRunEntity(
     fun toDomain(): CurlRunSummary = CurlRunSummary(
         id = id,
         commandText = commandText,
+        effectiveCommandText = effectiveCommandText,
         normalizedCommandText = normalizedCommandText,
         startedAt = startedAt,
         finishedAt = finishedAt,
@@ -43,6 +45,7 @@ data class CurlRunEntity(
 fun CurlRunSummary.toEntity(): CurlRunEntity = CurlRunEntity(
     id = id,
     commandText = commandText,
+    effectiveCommandText = effectiveCommandText,
     normalizedCommandText = normalizedCommandText,
     startedAt = startedAt,
     finishedAt = finishedAt,

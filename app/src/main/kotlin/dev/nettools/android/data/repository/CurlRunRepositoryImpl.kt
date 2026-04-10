@@ -82,6 +82,7 @@ class CurlRunRepositoryImpl @Inject constructor(
         exitCode: Int?,
         durationMillis: Long?,
         cleanupWarning: String?,
+        effectiveCommandText: String?,
     ) {
         val existing = runDao.getById(runId) ?: return
         runDao.upsert(
@@ -91,6 +92,7 @@ class CurlRunRepositoryImpl @Inject constructor(
                 exitCode = exitCode ?: existing.exitCode,
                 durationMillis = durationMillis ?: existing.durationMillis,
                 cleanupWarning = cleanupWarning ?: existing.cleanupWarning,
+                effectiveCommandText = effectiveCommandText ?: existing.effectiveCommandText,
             )
         )
     }

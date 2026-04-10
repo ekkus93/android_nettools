@@ -76,8 +76,17 @@ class CurlForegroundService : LifecycleService() {
 
     private suspend fun executeRun(params: PendingCurlRunParams) {
         val preparedCommand = workspaceAdapter.prepareForExecution(params.parsedCommand)
-        curlRunHolder.startRun(runId = params.runId, commandText = params.rawCommandText)
-        runRepository.updateStatus(params.runId, status = CurlRunStatus.IN_PROGRESS)
+        val effectiveCommandText = preparedCommand.effectiveCommandText
+        curlRunHolder.startRun(
+            runId = params.runId,
+            commandText = params.rawCommandText,
+            effectiveCommandText = effectiveCommandText,
+        )
+        runRepository.updateStatus(
+            params.runId,
+            status = CurlRunStatus.IN_PROGRESS,
+            effectiveCommandText = effectiveCommandText,
+        )
         startForeground(
             FOREGROUND_NOTIFICATION_ID,
             notificationHelper.createCurlProgressNotification(
@@ -115,6 +124,7 @@ class CurlForegroundService : LifecycleService() {
                 finishedAt = System.currentTimeMillis(),
                 exitCode = result.exitCode,
                 durationMillis = result.durationMillis,
+                effectiveCommandText = effectiveCommandText,
             )
             curlRunHolder.updateStatus(status = finalStatus, exitCode = result.exitCode)
             val notification = if (finalStatus == CurlRunStatus.COMPLETED) {
@@ -138,6 +148,7 @@ class CurlForegroundService : LifecycleService() {
                 status = CurlRunStatus.CANCELLED,
                 finishedAt = System.currentTimeMillis(),
                 cleanupWarning = cleanupWarning,
+                effectiveCommandText = effectiveCommandText,
             )
             curlRunHolder.updateStatus(status = CurlRunStatus.CANCELLED, cleanupWarning = cleanupWarning)
             notifyCompletion(
@@ -156,6 +167,7 @@ class CurlForegroundService : LifecycleService() {
                 status = CurlRunStatus.FAILED,
                 finishedAt = System.currentTimeMillis(),
                 cleanupWarning = cleanupWarning,
+                effectiveCommandText = effectiveCommandText,
             )
             curlRunHolder.appendOutput(isStdout = false, chunk = failureReason)
             curlRunHolder.updateStatus(status = CurlRunStatus.FAILED, cleanupWarning = cleanupWarning)
