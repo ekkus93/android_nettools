@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T19:19:35Z - GPT-5.4 - Closed curl cancellation coverage and executor cleanup gap
+
+Finished the last Kotlin-side curl slice by extracting foreground-run execution into `CurlRunExecutionCoordinator`, adding deterministic cancellation coverage for an active run, and fixing cleanup so nonzero curl exit codes now trigger the same partial-output cleanup path as other failures. The same slice added JVM validation for workspace-root display and results-state propagation for truncation and cleanup warnings, and the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`; the only remaining unchecked curl TODO items now require a connected Android device.
+
 ## 2026-04-10T18:54:48Z - GPT-5.4 - Added compile-checked curl Compose UI tests
 
 Finished the curl UI-test slice by extracting stable screen-content composables for the runner, results, and workspace browser, adding Compose `androidTest` dependencies, and writing instrumentation tests that cover valid-run submission, malformed-command validation messaging, stdout/stderr separation, and workspace CRUD dialog flows. The full validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest`; connected Android test execution and real-device behavior checks remain blocked until a device is available.

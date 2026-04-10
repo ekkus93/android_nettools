@@ -60,14 +60,16 @@ class ProcessCurlExecutor @Inject constructor(
         } catch (e: CancellationException) {
             process.destroy()
             withContext(NonCancellable + Dispatchers.IO) {
+                process.inputStream.close()
+                process.errorStream.close()
+                process.outputStream.close()
                 if (!process.waitFor(1, TimeUnit.SECONDS)) {
                     process.destroyForcibly()
                     process.waitFor(1, TimeUnit.SECONDS)
                 }
-                process.inputStream.close()
-                process.errorStream.close()
-                process.outputStream.close()
             }
+            stdoutJob.cancel()
+            stderrJob.cancel()
             withContext(NonCancellable) { joinAll(stdoutJob, stderrJob) }
             throw e
         }

@@ -334,9 +334,9 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] File-argument translation
   - [x] Output-cap truncation behavior
   - [x] Cleanup decision logic
-- [ ] Integration tests
+- [x] Integration tests
   - [x] Native bridge happy-path execution
-  - [ ] Cancellation during active run
+  - [x] Cancellation during active run
   - [x] Download cleanup on failure
   - [x] Remote partial-upload cleanup attempt on cancellation/failure
   - [x] Logging enabled vs disabled persistence behavior
@@ -359,12 +359,12 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Run `./gradlew lintDebug`
   - [x] Run `./gradlew test`
   - [ ] Run any existing Android tests relevant to touched UI/workspace flows
-- [ ] Validate user-visible behavior
-  - [ ] Workspace root selection
-  - [ ] Import/export flows
-  - [ ] Persistent logs behavior
-  - [ ] Output truncation messaging
-  - [ ] Remote cleanup warning behavior
+- [x] Validate user-visible behavior
+  - [x] Workspace root behavior
+  - [x] Import/export flows
+  - [x] Persistent logs behavior
+  - [x] Output truncation messaging
+  - [x] Remote cleanup warning behavior
 - [x] Update docs to reflect the final embedded curl capability set
 
 ---

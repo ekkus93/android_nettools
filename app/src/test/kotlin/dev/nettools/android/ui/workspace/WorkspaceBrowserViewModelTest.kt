@@ -68,6 +68,16 @@ class WorkspaceBrowserViewModelTest {
     }
 
     @Test
+    fun `initial load exposes the configured workspace root path`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        val viewModel = createViewModel()
+
+        advanceUntilIdle()
+
+        assertEquals("/workspace/root", viewModel.uiState.value.workspaceRootPath)
+    }
+
+    @Test
     fun `importFiles surfaces a friendly error when import fails`() = runTest(testDispatcher) {
         Dispatchers.setMain(testDispatcher)
         coEvery {

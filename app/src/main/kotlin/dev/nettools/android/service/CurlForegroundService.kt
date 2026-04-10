@@ -11,21 +11,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import dev.nettools.android.data.curl.CurlCommandWorkspaceAdapter
-import dev.nettools.android.data.curl.CurlExecutionRequest
-import dev.nettools.android.data.curl.CurlExecutor
-import dev.nettools.android.data.curl.CurlRemoteCleanupExecutor
-import dev.nettools.android.data.curl.CurlRemoteCleanupPlanner
-import dev.nettools.android.data.curl.CurlCleanupResult
-import dev.nettools.android.domain.model.CurlOutputStream
 import dev.nettools.android.domain.model.CurlRunStatus
-import dev.nettools.android.domain.repository.CurlRunRepository
-import dev.nettools.android.util.CurlUserMessageFormatter
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -43,12 +31,8 @@ class CurlForegroundService : LifecycleService() {
     }
 
     @Inject lateinit var curlRunHolder: CurlRunHolder
-    @Inject lateinit var runRepository: CurlRunRepository
+    @Inject lateinit var runExecutionCoordinator: CurlRunExecutionCoordinator
     @Inject lateinit var notificationHelper: NotificationHelper
-    @Inject lateinit var workspaceAdapter: CurlCommandWorkspaceAdapter
-    @Inject lateinit var curlExecutor: CurlExecutor
-    @Inject lateinit var remoteCleanupPlanner: CurlRemoteCleanupPlanner
-    @Inject lateinit var remoteCleanupExecutor: CurlRemoteCleanupExecutor
 
     private var activeRunJob: Job? = null
 
@@ -82,171 +66,41 @@ class CurlForegroundService : LifecycleService() {
     }
 
     private suspend fun executeRun(params: PendingCurlRunParams) {
-        val preparedCommand = workspaceAdapter.prepareForExecution(params.parsedCommand)
-        val effectiveCommandText = preparedCommand.effectiveCommandText
-        curlRunHolder.startRun(
-            runId = params.runId,
-            commandText = params.rawCommandText,
-            effectiveCommandText = effectiveCommandText,
-        )
-        runRepository.updateStatus(
-            params.runId,
-            status = CurlRunStatus.IN_PROGRESS,
-            effectiveCommandText = effectiveCommandText,
-        )
-        startForeground(
-            FOREGROUND_NOTIFICATION_ID,
-            notificationHelper.createCurlProgressNotification(
-                runId = params.runId,
-                commandText = params.rawCommandText,
-                statusText = "Running curl",
-                channelId = CURL_CHANNEL_ID,
-            ),
-        )
-
         try {
-            val result = curlExecutor.execute(
-                request = CurlExecutionRequest(
-                    runId = params.runId,
-                    parsedCommand = preparedCommand.command,
-                    workspaceDirectory = params.workspaceRootPath,
-                ),
-            ) { chunk ->
-                val isStdout = chunk.stream == CurlOutputStream.STDOUT
-                curlRunHolder.appendOutput(isStdout = isStdout, chunk = chunk.text)
-                if (params.loggingEnabled) {
-                    runRepository.appendOutput(
+            val outcome = runExecutionCoordinator.execute(params) {
+                startForeground(
+                    FOREGROUND_NOTIFICATION_ID,
+                    notificationHelper.createCurlProgressNotification(
                         runId = params.runId,
-                        stream = chunk.stream,
-                        text = chunk.text,
-                        byteCap = if (isStdout) params.stdoutByteCap else params.stderrByteCap,
-                    )
-                }
+                        commandText = params.rawCommandText,
+                        statusText = "Running curl",
+                        channelId = CURL_CHANNEL_ID,
+                    ),
+                )
             }
-
-            val finalStatus = if (result.exitCode == 0) CurlRunStatus.COMPLETED else CurlRunStatus.FAILED
-            runRepository.updateStatus(
-                runId = params.runId,
-                status = finalStatus,
-                finishedAt = System.currentTimeMillis(),
-                exitCode = result.exitCode,
-                durationMillis = result.durationMillis,
-                effectiveCommandText = effectiveCommandText,
-                cleanupStatus = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED,
-            )
-            curlRunHolder.updateStatus(
-                status = finalStatus,
-                exitCode = result.exitCode,
-                cleanupStatus = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED,
-            )
-            val notification = if (finalStatus == CurlRunStatus.COMPLETED) {
-                notificationHelper.createCurlCompletionNotification(
+            val notification = when (outcome.status) {
+                CurlRunStatus.COMPLETED -> notificationHelper.createCurlCompletionNotification(
                     commandText = params.rawCommandText,
-                    exitCode = result.exitCode,
+                    exitCode = requireNotNull(outcome.exitCode),
                     channelId = CURL_CHANNEL_ID,
                 )
-            } else {
-                notificationHelper.createCurlFailureNotification(
+                CurlRunStatus.CANCELLED -> notificationHelper.createCurlCancellationNotification(
                     commandText = params.rawCommandText,
-                    reason = "Exit code: ${result.exitCode}",
                     channelId = CURL_CHANNEL_ID,
                 )
+                CurlRunStatus.FAILED -> notificationHelper.createCurlFailureNotification(
+                    commandText = params.rawCommandText,
+                    reason = requireNotNull(outcome.failureReason),
+                    channelId = CURL_CHANNEL_ID,
+                )
+                else -> error("Unexpected terminal curl status: ${outcome.status}")
             }
             notifyCompletion(params.runId, notification)
-        } catch (e: CancellationException) {
-            val cancellationMessage = CurlUserMessageFormatter.executionCancelled()
-            curlRunHolder.appendOutput(isStdout = false, chunk = cancellationMessage)
-            if (params.loggingEnabled) {
-                runRepository.appendOutput(
-                    runId = params.runId,
-                    stream = CurlOutputStream.STDERR,
-                    text = cancellationMessage,
-                    byteCap = params.stderrByteCap,
-                )
-            }
-            val cleanupResult = withContext(NonCancellable) {
-                performCleanup(preparedCommand.command, preparedCommand, params.workspaceRootPath)
-            }
-            runRepository.updateStatus(
-                runId = params.runId,
-                status = CurlRunStatus.CANCELLED,
-                finishedAt = System.currentTimeMillis(),
-                cleanupWarning = cleanupResult.warning,
-                effectiveCommandText = effectiveCommandText,
-                cleanupStatus = cleanupResult.status,
-            )
-            curlRunHolder.updateStatus(
-                status = CurlRunStatus.CANCELLED,
-                cleanupWarning = cleanupResult.warning,
-                cleanupStatus = cleanupResult.status,
-            )
-            notifyCompletion(
-                params.runId,
-                notificationHelper.createCurlCancellationNotification(
-                    commandText = params.rawCommandText,
-                    channelId = CURL_CHANNEL_ID,
-                ),
-            )
-            throw e
-        } catch (e: Exception) {
-            val failureReason = CurlUserMessageFormatter.executionFailure(e)
-            val cleanupResult = performCleanup(preparedCommand.command, preparedCommand, params.workspaceRootPath)
-            runRepository.updateStatus(
-                runId = params.runId,
-                status = CurlRunStatus.FAILED,
-                finishedAt = System.currentTimeMillis(),
-                cleanupWarning = cleanupResult.warning,
-                effectiveCommandText = effectiveCommandText,
-                cleanupStatus = cleanupResult.status,
-            )
-            curlRunHolder.appendOutput(isStdout = false, chunk = failureReason)
-            curlRunHolder.updateStatus(
-                status = CurlRunStatus.FAILED,
-                cleanupWarning = cleanupResult.warning,
-                cleanupStatus = cleanupResult.status,
-            )
-            notifyCompletion(
-                params.runId,
-                notificationHelper.createCurlFailureNotification(
-                    commandText = params.rawCommandText,
-                    reason = failureReason,
-                    channelId = CURL_CHANNEL_ID,
-                ),
-            )
         } finally {
             activeRunJob = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
-    }
-
-    private suspend fun performCleanup(
-        command: dev.nettools.android.domain.model.ParsedCurlCommand,
-        preparedCommand: dev.nettools.android.data.curl.PreparedCurlCommand,
-        workspaceRootPath: String,
-    ): CurlCleanupResult {
-        val localCleanup = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
-        val remoteCleanup = remoteCleanupPlanner.plan(command)?.let { plan ->
-            remoteCleanupExecutor.execute(plan = plan, workspaceDirectory = workspaceRootPath)
-        } ?: CurlCleanupResult(status = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED)
-
-        val warnings = listOfNotNull(localCleanup.warning, remoteCleanup.warning)
-        val status = when {
-            localCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.FAILED ||
-                remoteCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.FAILED ->
-                dev.nettools.android.domain.model.CurlCleanupStatus.FAILED
-
-            localCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED ||
-                remoteCleanup.status == dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED ->
-                dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED
-
-            else -> dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED
-        }
-
-        return CurlCleanupResult(
-            status = status,
-            warning = warnings.takeIf { it.isNotEmpty() }?.joinToString(separator = "\n"),
-        )
     }
 
     private fun notifyCompletion(runId: String, notification: android.app.Notification) {
