@@ -26,6 +26,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -96,6 +98,66 @@ class CurlRunnerViewModelTest {
         assertEquals("Only one curl run can be active at a time.", viewModel.uiState.value.errorMessage)
         coVerify(exactly = 0) { startCurlRun(any()) }
         verify(exactly = 0) { dispatchPendingCurlRun(any()) }
+    }
+
+    @Test
+    fun `init mirrors active live run state into ui state`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        every { observeActiveCurlRun() } returns MutableStateFlow(
+            CurlLiveRunState(
+                runId = "run-42",
+                commandText = "curl https://busy.example",
+                status = CurlRunStatus.VALIDATING,
+            ),
+        )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals("run-42", viewModel.uiState.value.activeRunId)
+        assertEquals("curl https://busy.example", viewModel.uiState.value.activeCommandText)
+        assertEquals(CurlRunStatus.VALIDATING, viewModel.uiState.value.activeStatus)
+        assertTrue(viewModel.uiState.value.hasActiveRun)
+    }
+
+    @Test
+    fun `completed live run does not block starting another run`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        every { observeActiveCurlRun() } returns MutableStateFlow(
+            CurlLiveRunState(
+                runId = "finished-run",
+                commandText = "curl https://done.example",
+                status = CurlRunStatus.COMPLETED,
+            ),
+        )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals("finished-run", viewModel.uiState.value.activeRunId)
+        assertFalse(viewModel.uiState.value.hasActiveRun)
+    }
+
+    @Test
+    fun `onCommandChange clears validation and error state`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        every { observeActiveCurlRun() } returns MutableStateFlow(CurlLiveRunState())
+        coEvery { startCurlRun("curl --bogus") } returns CurlStartResult(
+            errors = listOf(CurlValidationError(message = "Unknown option: --bogus", token = "--bogus")),
+        )
+
+        val viewModel = createViewModel()
+        viewModel.onCommandChange("curl --bogus")
+        viewModel.runCommand()
+        advanceUntilIdle()
+        assertEquals(listOf("Unknown option: --bogus"), viewModel.uiState.value.validationMessages)
+
+        viewModel.clearErrorMessage()
+        viewModel.onCommandChange("curl https://example.com")
+
+        assertEquals(emptyList<String>(), viewModel.uiState.value.validationMessages)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+        assertEquals("curl https://example.com", viewModel.uiState.value.commandText)
     }
 
     private fun createViewModel(): CurlRunnerViewModel {

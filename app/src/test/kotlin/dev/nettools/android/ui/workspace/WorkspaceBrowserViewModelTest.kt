@@ -95,6 +95,103 @@ class WorkspaceBrowserViewModelTest {
         )
     }
 
+    @Test
+    fun `createDirectory rejects blank names before touching the repository`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.createDirectory("   ")
+
+        assertEquals("Directory name cannot be blank.", viewModel.uiState.value.errorMessage)
+        assertEquals(emptyList<String>(), workspaceRepository.createdDirectories)
+    }
+
+    @Test
+    fun `openDirectory and navigateUp update the current path`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.openDirectory("/logs/archive")
+        advanceUntilIdle()
+        assertEquals("/logs/archive", viewModel.uiState.value.currentPath)
+
+        viewModel.navigateUp()
+        advanceUntilIdle()
+        assertEquals("/logs", viewModel.uiState.value.currentPath)
+    }
+
+    @Test
+    fun `move normalizes the destination directory path before delegating`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        workspaceRepository.normalizedPaths["logs"] = "/logs"
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.move(path = "/notes.txt", destinationDirectoryPath = "logs")
+        advanceUntilIdle()
+
+        assertEquals(listOf("/notes.txt" to "/logs"), workspaceRepository.moves)
+    }
+
+    @Test
+    fun `createDirectory builds child path beneath the current directory`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.openDirectory("/logs")
+        advanceUntilIdle()
+
+        viewModel.createDirectory("archive")
+        advanceUntilIdle()
+
+        assertEquals(listOf("/logs/archive"), workspaceRepository.createdDirectories)
+    }
+
+    @Test
+    fun `exportFile surfaces a friendly error when export fails`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        coEvery {
+            exportWorkspaceDocument(path = "/logs/output.txt", destinationUri = "content://docs/export")
+        } throws IllegalStateException("Permission may have been revoked.")
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.exportFile(path = "/logs/output.txt", destinationUri = "content://docs/export")
+        advanceUntilIdle()
+
+        assertEquals(
+            "Android no longer allows access to the selected file or destination.",
+            viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `delete surfaces a friendly error when the item no longer exists`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        workspaceRepository.deleteError = IllegalStateException("Workspace item does not exist.")
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.delete("/missing.txt")
+        advanceUntilIdle()
+
+        assertEquals("The selected workspace item no longer exists.", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `clearError removes the current transient error message`() = runTest(testDispatcher) {
+        Dispatchers.setMain(testDispatcher)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.createDirectory("   ")
+
+        viewModel.clearError()
+
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
     private fun createViewModel(): WorkspaceBrowserViewModel {
         return WorkspaceBrowserViewModel(
             workspaceRepository = workspaceRepository,
@@ -105,23 +202,39 @@ class WorkspaceBrowserViewModelTest {
 }
 
 private class FakeWorkspaceRepository : WorkspaceRepository {
+    val createdDirectories = mutableListOf<String>()
+    val moves = mutableListOf<Pair<String, String>>()
+    val normalizedPaths = mutableMapOf<String, String>()
+    var deleteError: Throwable? = null
+
     override suspend fun getWorkspaceRootPath(): String = "/workspace/root"
 
     override suspend fun list(path: String): List<WorkspaceEntry> = emptyList()
 
-    override suspend fun createDirectory(path: String) = Unit
+    override suspend fun createDirectory(path: String) {
+        createdDirectories += path
+    }
 
     override suspend fun rename(path: String, newName: String): WorkspaceEntry {
         error("Not needed for this test")
     }
 
     override suspend fun move(path: String, destinationDirectoryPath: String): WorkspaceEntry {
-        error("Not needed for this test")
+        moves += path to destinationDirectoryPath
+        return WorkspaceEntry(
+            path = "$destinationDirectoryPath/notes.txt",
+            name = "notes.txt",
+            isDirectory = false,
+            sizeBytes = 0,
+            modifiedAt = 0,
+        )
     }
 
-    override suspend fun delete(path: String) = Unit
+    override suspend fun delete(path: String) {
+        deleteError?.let { throw it }
+    }
 
-    override fun normalizePath(path: String): String = path
+    override fun normalizePath(path: String): String = normalizedPaths[path] ?: path
 
     override suspend fun resolveLocalPath(path: String): String = path
 

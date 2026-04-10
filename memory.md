@@ -1,5 +1,17 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T21:23:47Z - GPT-5.4 - Connected Android tests passed once the phone stayed awake and unlocked
+
+Retried `connectedDebugAndroidTest` after confirming the attached `SM_A546E` was `mWakefulness=Awake`, `mDreamingLockscreen=false`, and focused on the launcher instead of the notification shade. The run completed successfully, which clears the earlier validation blocker for the recent curl/workspace JVM-test additions; the current validation set is green with `lintDebug`, `test`, and `connectedDebugAndroidTest`.
+
+## 2026-04-10T21:20:33Z - GPT-5.4 - Expanded curl and workspace JVM coverage; connected Compose tests still depend on device lockscreen state
+
+Added direct JVM tests for `BundledCurlBinaryProvider` success/failure paths, plus broader ViewModel coverage for `CurlResultsViewModel`, `CurlRunnerViewModel`, and `WorkspaceBrowserViewModel` covering missing/live state handling, cancellation/save-output behavior, active-run mirroring, blank-name validation, normalized move destinations, navigation, and friendly workspace error mapping. `./gradlew --no-daemon --console=plain lintDebug test` passes after these additions, but further high-value Compose screen coverage is still gated by the attached phone repeatedly reporting `mDreamingLockscreen=true`, which causes connected Compose tests to fail before a hierarchy is available.
+
+## 2026-04-10T21:05:55Z - GPT-5.4 - Added direct bundled-curl provider unit tests; connected Compose tests can be blocked by dream lockscreen
+
+Added focused JVM coverage for `BundledCurlBinaryProvider`, including successful runtime resolution, missing native executable, no supported ABI, and CA-bundle extraction failure cleanup. During validation, `lintDebug` and `./gradlew test` passed, but `connectedDebugAndroidTest` repeatedly failed for an environmental reason on the attached phone: `dumpsys window` kept reporting `mDreamingLockscreen=true`, which prevented the Compose test activities from exposing a hierarchy even after wake/dismiss-keyguard adb commands.
+
 ## 2026-04-10T20:43:51Z - GPT-5.4 - Curl utility buttons now wrap by row instead of wrapping labels
 
 Adjusted the Curl runner's secondary action layout so the Workspace/Logs/Settings buttons use a wrapping `FlowRow` with single-line labels instead of a forced three-column row. This keeps "Workspace" from breaking into two lines on phone-width layouts while preserving the existing actions and validation flow.

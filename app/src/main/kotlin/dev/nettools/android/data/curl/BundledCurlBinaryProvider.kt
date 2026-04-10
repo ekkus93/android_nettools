@@ -16,7 +16,7 @@ class BundledCurlBinaryProvider @Inject constructor(
 ) : CurlBinaryProvider {
 
     override suspend fun getRuntime(): CurlRuntime {
-        val abi = Build.SUPPORTED_ABIS.firstOrNull()
+        val abi = currentSupportedAbis().firstOrNull()
             ?: error("No supported device ABI was reported by Android.")
         val executable = File(context.applicationInfo.nativeLibraryDir, "libcurl_exec.so")
         check(executable.exists() && executable.canExecute()) {
@@ -52,3 +52,5 @@ class BundledCurlBinaryProvider @Inject constructor(
         }
     }
 }
+
+internal fun currentSupportedAbis(): Array<String> = Build.SUPPORTED_ABIS
