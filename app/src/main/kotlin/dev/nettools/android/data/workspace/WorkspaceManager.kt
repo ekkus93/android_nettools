@@ -7,7 +7,9 @@ import dev.nettools.android.domain.model.WorkspaceEntry
 import dev.nettools.android.domain.repository.CurlSettingsRepository
 import dev.nettools.android.domain.repository.WorkspaceRepository
 import java.io.File
+import java.io.InputStream
 import java.io.IOException
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -103,6 +105,44 @@ class WorkspaceManager @Inject constructor(
     override fun normalizePath(path: String): String = WorkspacePathResolver.normalize(path)
 
     override suspend fun resolveLocalPath(path: String): String = resolveToFile(path).absolutePath
+
+    override suspend fun writeTextFile(path: String, text: String): WorkspaceEntry {
+        val target = resolveToFile(path)
+        target.parentFile?.mkdirs()
+        target.writeText(text)
+        return target.toWorkspaceEntry(rootFile = workspaceRootFile(), path = pathOf(target))
+    }
+
+    override suspend fun importFile(targetDirectoryPath: String, fileName: String, inputStream: InputStream): WorkspaceEntry {
+        val directory = resolveToFile(targetDirectoryPath)
+        if (!directory.exists() || !directory.isDirectory) {
+            throw IOException("Destination is not a workspace directory: ${normalizePath(targetDirectoryPath)}")
+        }
+        val sanitizedFileName = File(fileName).name.trim()
+        require(sanitizedFileName.isNotEmpty()) { "Imported file name must not be blank." }
+        val target = File(directory, sanitizedFileName)
+        if (target.exists()) {
+            throw IOException("Workspace entry already exists: ${pathOf(target)}")
+        }
+        inputStream.use { input ->
+            target.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        return target.toWorkspaceEntry(rootFile = workspaceRootFile(), path = pathOf(target))
+    }
+
+    override suspend fun exportFile(path: String, outputStream: OutputStream) {
+        val source = resolveToFile(path)
+        if (!source.exists() || !source.isFile) {
+            throw IOException("Workspace file does not exist: ${normalizePath(path)}")
+        }
+        outputStream.use { output ->
+            source.inputStream().use { input ->
+                input.copyTo(output)
+            }
+        }
+    }
 
     private suspend fun resolveToFile(path: String): File {
         val root = workspaceRootFile()

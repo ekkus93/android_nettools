@@ -1,10 +1,16 @@
 package dev.nettools.android.ui.workspace
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nettools.android.domain.model.WorkspaceEntry
 import dev.nettools.android.domain.repository.WorkspaceRepository
+import dev.nettools.android.domain.usecase.curl.ExportWorkspaceFileUseCase
+import dev.nettools.android.domain.usecase.curl.ImportWorkspaceFileUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +34,10 @@ data class WorkspaceBrowserUiState(
  */
 @HiltViewModel
 class WorkspaceBrowserViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val workspaceRepository: WorkspaceRepository,
+    private val importWorkspaceFile: ImportWorkspaceFileUseCase,
+    private val exportWorkspaceFile: ExportWorkspaceFileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkspaceBrowserUiState())
@@ -129,6 +138,53 @@ class WorkspaceBrowserViewModel @Inject constructor(
     /** Clears the current transient error message. */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /** Imports the selected [uris] into the current workspace directory. */
+    fun importFiles(uris: List<Uri>) {
+        viewModelScope.launch {
+            uris.forEach { uri ->
+                runCatching {
+                    val fileName = queryDisplayName(uri)
+                    val input = context.contentResolver.openInputStream(uri)
+                        ?: error("Unable to open the selected file. Permission may have been revoked.")
+                    importWorkspaceFile(
+                        targetDirectoryPath = _uiState.value.currentPath,
+                        fileName = fileName,
+                        inputStream = input,
+                    )
+                }.onFailure { error ->
+                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to import file.") }
+                }
+            }
+            load()
+        }
+    }
+
+    /** Exports the workspace file at [path] into the selected [uri]. */
+    fun exportFile(path: String, uri: Uri) {
+        viewModelScope.launch {
+            runCatching {
+                val output = context.contentResolver.openOutputStream(uri)
+                    ?: error("Unable to write the selected destination. Permission may have been revoked.")
+                exportWorkspaceFile(path = path, outputStream = output)
+            }.onFailure { error ->
+                _uiState.update { it.copy(errorMessage = error.message ?: "Unable to export file.") }
+            }
+        }
+    }
+
+    private fun queryDisplayName(uri: Uri): String {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) {
+                        return cursor.getString(index)
+                    }
+                }
+            }
+        return uri.lastPathSegment?.substringAfterLast('/') ?: "imported-file"
     }
 }
 

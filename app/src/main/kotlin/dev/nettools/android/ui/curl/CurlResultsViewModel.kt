@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.nettools.android.domain.model.CurlRunRecord
+import dev.nettools.android.domain.model.CurlRunOutput
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.repository.CurlRunRepository
 import dev.nettools.android.domain.usecase.curl.CancelActiveCurlRunUseCase
 import dev.nettools.android.domain.usecase.curl.ObserveActiveCurlRunUseCase
+import dev.nettools.android.domain.usecase.curl.SaveCurlOutputUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,7 @@ data class CurlResultsUiState(
     val durationMillis: Long? = null,
     val cleanupWarning: String? = null,
     val isMissing: Boolean = false,
+    val saveMessage: String? = null,
 ) {
     /** True when the run is still cancellable. */
     val canCancel: Boolean
@@ -47,6 +50,7 @@ class CurlResultsViewModel @Inject constructor(
     repository: CurlRunRepository,
     observeActiveCurlRun: ObserveActiveCurlRunUseCase,
     private val cancelActiveCurlRun: CancelActiveCurlRunUseCase,
+    private val saveCurlOutput: SaveCurlOutputUseCase,
 ) : ViewModel() {
 
     private val runId: String = checkNotNull(savedStateHandle["runId"])
@@ -72,6 +76,25 @@ class CurlResultsViewModel @Inject constructor(
             cancelActiveCurlRun(runId)
             _uiState.update { it.copy(status = CurlRunStatus.CANCELLED) }
         }
+    }
+
+    /** Saves the current output snapshot into the workspace. */
+    fun saveOutput() {
+        val output = CurlRunOutput(
+            stdoutText = _uiState.value.stdoutText,
+            stderrText = _uiState.value.stderrText,
+            stdoutTruncated = _uiState.value.stdoutTruncated,
+            stderrTruncated = _uiState.value.stderrTruncated,
+        )
+        viewModelScope.launch {
+            val savedPath = saveCurlOutput(runId, output)
+            _uiState.update { it.copy(saveMessage = "Saved output to $savedPath") }
+        }
+    }
+
+    /** Clears the transient save message after the UI displays it. */
+    fun clearSaveMessage() {
+        _uiState.update { it.copy(saveMessage = null) }
     }
 }
 

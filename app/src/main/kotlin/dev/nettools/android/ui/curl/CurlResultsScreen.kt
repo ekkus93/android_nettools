@@ -25,9 +25,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +56,15 @@ fun CurlResultsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
     var showMetadata by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.saveMessage) {
+        state.saveMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearSaveMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -69,6 +80,7 @@ fun CurlResultsScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (state.isMissing) {
             Column(
@@ -101,6 +113,7 @@ fun CurlResultsScreen(
                 exitCode = state.exitCode,
                 onToggleMetadata = { showMetadata = !showMetadata },
                 onCancel = if (state.canCancel) viewModel::cancelRun else null,
+                onSaveOutput = viewModel::saveOutput,
             )
 
             if (showMetadata) {
@@ -144,6 +157,7 @@ private fun StatusCard(
     exitCode: Int?,
     onToggleMetadata: () -> Unit,
     onCancel: (() -> Unit)?,
+    onSaveOutput: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -165,6 +179,9 @@ private fun StatusCard(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onToggleMetadata) {
                     Text(if (exitCode == null) "Show details" else "Show exit details")
+                }
+                OutlinedButton(onClick = onSaveOutput) {
+                    Text("Save output")
                 }
                 if (onCancel != null) {
                     Button(onClick = onCancel) {

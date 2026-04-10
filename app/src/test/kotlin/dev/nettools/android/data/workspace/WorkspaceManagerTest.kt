@@ -9,9 +9,12 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.file.Path
 
 /**
@@ -66,5 +69,64 @@ class WorkspaceManagerTest {
         manager.delete("/archive")
         val finalEntries = manager.list("/")
         assertFalse(finalEntries.any { it.name == "archive" })
+    }
+
+    @Test
+    fun `workspace import and export copy file contents`() = runTest {
+        every { context.filesDir } returns tempDir.toFile()
+        coEvery { settingsRepository.getSettings() } returns CurlSettings(
+            workspaceRootPath = tempDir.resolve("workspace").toString(),
+        )
+        val manager = WorkspaceManager(context, settingsRepository)
+
+        manager.createDirectory("/imports")
+        val imported = manager.importFile(
+            targetDirectoryPath = "/imports",
+            fileName = "sample.txt",
+            inputStream = ByteArrayInputStream("hello workspace".toByteArray()),
+        )
+        assertEquals("/imports/sample.txt", imported.path)
+
+        val output = ByteArrayOutputStream()
+        manager.exportFile(path = imported.path, outputStream = output)
+        assertEquals("hello workspace", output.toString())
+    }
+
+    @Test
+    fun `workspace import sanitizes incoming file names`() = runTest {
+        every { context.filesDir } returns tempDir.toFile()
+        coEvery { settingsRepository.getSettings() } returns CurlSettings(
+            workspaceRootPath = tempDir.resolve("workspace").toString(),
+        )
+        val manager = WorkspaceManager(context, settingsRepository)
+
+        manager.importFile(
+            targetDirectoryPath = "/",
+            fileName = "../secret.txt",
+            inputStream = ByteArrayInputStream("secret".toByteArray()),
+        )
+
+        val entries = manager.list("/")
+        assertEquals("secret.txt", entries.single().name)
+        assertFalse(tempDir.resolve("secret.txt").toFile().exists())
+    }
+
+    @Test
+    fun `workspace import rejects blank file names`() {
+        every { context.filesDir } returns tempDir.toFile()
+        coEvery { settingsRepository.getSettings() } returns CurlSettings(
+            workspaceRootPath = tempDir.resolve("workspace").toString(),
+        )
+        val manager = WorkspaceManager(context, settingsRepository)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            runTest {
+                manager.importFile(
+                    targetDirectoryPath = "/",
+                    fileName = "   ",
+                    inputStream = ByteArrayInputStream(ByteArray(0)),
+                )
+            }
+        }
     }
 }

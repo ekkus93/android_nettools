@@ -1,6 +1,8 @@
 package dev.nettools.android.domain.repository
 
 import dev.nettools.android.domain.model.WorkspaceEntry
+import java.io.InputStream
+import java.io.OutputStream
 
 /**
  * Repository interface for the curl workspace file model.
@@ -30,4 +32,13 @@ interface WorkspaceRepository {
 
     /** Resolves a workspace path to an absolute local filesystem path. */
     suspend fun resolveLocalPath(path: String): String
+
+    /** Writes plain text to the given workspace path and returns the resulting entry. */
+    suspend fun writeTextFile(path: String, text: String): WorkspaceEntry
+
+    /** Imports a file stream into the given workspace directory. */
+    suspend fun importFile(targetDirectoryPath: String, fileName: String, inputStream: InputStream): WorkspaceEntry
+
+    /** Exports the workspace file at [path] into the provided output stream. */
+    suspend fun exportFile(path: String, outputStream: OutputStream)
 }

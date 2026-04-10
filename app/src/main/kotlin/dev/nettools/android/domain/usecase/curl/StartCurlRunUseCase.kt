@@ -1,5 +1,6 @@
 package dev.nettools.android.domain.usecase.curl
 
+import dev.nettools.android.data.curl.CurlCommandWorkspaceAdapter
 import dev.nettools.android.domain.model.CurlRunRecord
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.model.CurlRunSummary
@@ -15,6 +16,7 @@ import javax.inject.Inject
  */
 class StartCurlRunUseCase @Inject constructor(
     private val validateCurlCommand: ValidateCurlCommandUseCase,
+    private val workspaceAdapter: CurlCommandWorkspaceAdapter,
     private val settingsRepository: CurlSettingsRepository,
     private val workspaceRepository: WorkspaceRepository,
     private val runRepository: CurlRunRepository,
@@ -30,6 +32,10 @@ class StartCurlRunUseCase @Inject constructor(
         }
 
         val parsedCommand = requireNotNull(parsed.command)
+        val pathErrors = workspaceAdapter.validate(parsedCommand)
+        if (pathErrors.isNotEmpty()) {
+            return CurlStartResult(errors = pathErrors)
+        }
         val settings = settingsRepository.getSettings()
         val runId = UUID.randomUUID().toString()
         val shouldPersistHistory = settings.saveHistoryEnabled

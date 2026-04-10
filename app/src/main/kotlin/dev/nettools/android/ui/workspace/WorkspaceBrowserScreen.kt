@@ -1,5 +1,7 @@
 package dev.nettools.android.ui.workspace
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +68,24 @@ fun WorkspaceBrowserScreen(
     var renameTarget by remember { mutableStateOf<WorkspaceEntry?>(null) }
     var moveTarget by remember { mutableStateOf<WorkspaceEntry?>(null) }
     var deleteTarget by remember { mutableStateOf<WorkspaceEntry?>(null) }
+    var exportTarget by remember { mutableStateOf<WorkspaceEntry?>(null) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.importFiles(uris)
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        val target = exportTarget
+        if (uri != null && target != null) {
+            viewModel.exportFile(target.path, uri)
+        }
+        exportTarget = null
+    }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { message ->
@@ -91,6 +111,12 @@ fun WorkspaceBrowserScreen(
                         Icon(
                             imageVector = Icons.Filled.CreateNewFolder,
                             contentDescription = "Create directory",
+                        )
+                    }
+                    IconButton(onClick = { importLauncher.launch(arrayOf("*/*")) }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "Import files into workspace",
                         )
                     }
                     IconButton(onClick = { viewModel.load() }) {
@@ -153,6 +179,10 @@ fun WorkspaceBrowserScreen(
                                 onRename = { renameTarget = entry },
                                 onMove = { moveTarget = entry },
                                 onDelete = { deleteTarget = entry },
+                                onExport = {
+                                    exportTarget = entry
+                                    exportLauncher.launch(entry.name)
+                                },
                             )
                             HorizontalDivider()
                         }
@@ -233,6 +263,7 @@ private fun WorkspaceEntryRow(
     onRename: () -> Unit,
     onMove: () -> Unit,
     onDelete: () -> Unit,
+    onExport: () -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -292,6 +323,14 @@ private fun WorkspaceEntryRow(
                         onClick = {
                             menuExpanded = false
                             onMove()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Export") },
+                        enabled = !entry.isDirectory,
+                        onClick = {
+                            menuExpanded = false
+                            onExport()
                         },
                     )
                     DropdownMenuItem(

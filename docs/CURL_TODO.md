@@ -89,12 +89,12 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Define a single global workspace root
   - [x] Persist the selected workspace root
   - [x] Define workspace-relative path rules for Unix-style paths
-- [ ] Implement workspace storage management
+- [x] Implement workspace storage management
   - [x] Create app-side storage layout for workspace content
-  - [ ] Add import into workspace via Android picker
-  - [ ] Add export from workspace via Android picker
-  - [ ] Handle conflicts during import/export
-  - [ ] Handle missing or revoked picker permissions explicitly
+  - [x] Add import into workspace via Android picker
+  - [x] Add export from workspace via Android picker
+  - [x] Handle conflicts during import/export
+  - [x] Handle missing or revoked picker permissions explicitly
 - [x] Implement workspace path translation
   - [x] Map pasted Unix-style paths into workspace-managed paths
   - [x] Normalize paths consistently
@@ -105,22 +105,22 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 6. Workspace Browser
 
-- [ ] Add a dedicated workspace browser screen
-  - [ ] Add navigation route and home entry points as needed
-  - [ ] Show files and directories in a mobile-friendly list
-  - [ ] Support loading, empty, and error states
-- [ ] Implement workspace file operations
-  - [ ] Create directory
-  - [ ] Rename file
-  - [ ] Rename directory
-  - [ ] Move file
-  - [ ] Move directory
-  - [ ] Delete file
-  - [ ] Delete directory
-- [ ] Implement import/export actions
-  - [ ] Import selected file(s) into workspace
-  - [ ] Export selected file(s) out of workspace
-  - [ ] Surface clear errors for partial or failed copy operations
+- [x] Add a dedicated workspace browser screen
+  - [x] Add navigation route and home entry points as needed
+  - [x] Show files and directories in a mobile-friendly list
+  - [x] Support loading, empty, and error states
+- [x] Implement workspace file operations
+  - [x] Create directory
+  - [x] Rename file
+  - [x] Rename directory
+  - [x] Move file
+  - [x] Move directory
+  - [x] Delete file
+  - [x] Delete directory
+- [x] Implement import/export actions
+  - [x] Import selected file(s) into workspace
+  - [x] Export selected file(s) out of workspace
+  - [x] Surface clear errors for partial or failed copy operations
 
 ---
 
@@ -133,12 +133,12 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Handle config-file arguments if present
   - [x] Handle common `@file` payload patterns
 - [ ] Implement translation from pasted command to executable local paths
-  - [ ] Rewrite workspace-rooted paths for native execution
+  - [x] Rewrite workspace-rooted paths for native execution
   - [ ] Preserve the visible user command or clearly show the effective path mapping
   - [ ] Ensure translation is reversible enough for good error messages
 - [ ] Validate file existence/intent when possible
-  - [ ] Catch obviously missing local input files before run
-  - [ ] Catch obviously invalid destination patterns before run
+  - [x] Catch obviously missing local input files before run
+  - [x] Catch obviously invalid destination patterns before run
 
 ---
 
@@ -159,9 +159,9 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Start curl run
   - [x] Observe active curl run
   - [x] Cancel active curl run
-  - [ ] Save output/logs
+  - [x] Save output/logs
   - [x] Clear logs
-  - [ ] Import/export workspace files
+  - [x] Import/export workspace files
 
 ---
 
@@ -208,8 +208,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 ## 11. Cleanup and Partial-File Handling
 
 - [ ] Define local cleanup behavior in code
-  - [ ] Delete failed/partial downloads
-  - [ ] Delete cancelled partial downloads
+  - [x] Delete failed/partial downloads
+  - [x] Delete cancelled partial downloads
   - [ ] Ensure local temp/work files are not leaked
 - [ ] Define remote cleanup behavior in code
   - [ ] Attempt best-effort cleanup of remote partial uploads
@@ -217,7 +217,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [ ] Ensure cancellation and failure paths both try cleanup
 - [ ] Add cleanup observability
   - [ ] Record whether cleanup succeeded, failed, or was skipped
-  - [ ] Surface cleanup warnings in a user-friendly form
+  - [x] Surface cleanup warnings in a user-friendly form
 
 ---
 
@@ -256,11 +256,11 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Show active/completed/failed/cancelled state clearly
   - [x] Show optional exit code and timing metadata on demand
   - [x] Indicate truncation when output caps are hit
-- [ ] Add actions
+- [x] Add actions
   - [x] Cancel
   - [x] Copy stdout
   - [x] Copy stderr
-  - [ ] Save output
+  - [x] Save output
 - [x] Improve readability
   - [x] Normalize output presentation for mobile
   - [x] Keep stdout/stderr meaningfully distinct

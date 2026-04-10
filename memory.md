@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T12:49:20Z - GPT-5.4 - Added curl workspace import-export and path cleanup slice
+
+Implemented the next curl slice: workspace path rewriting before execution, pre-run local path validation, partial local output cleanup with surfaced warnings, save-output-to-workspace support, and workspace browser import/export via Android pickers. Updated `docs/CURL_TODO.md` to mark the newly completed items and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 after disabling empty unit-test KAPT tasks to remove their warning noise.
+
 ## 2026-04-10T12:31:12Z - GPT-5.4 - Completed curl UI phase
 
 Finished the curl UI slice: added the home-card entry and routes, runner/results/logs/settings/workspace screens, active-run reconnect behavior, completion/failure/cancellation notifications, and settings/log-history controls. Updated `docs/CURL_TODO.md` to mark the completed UI and notification items and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.
