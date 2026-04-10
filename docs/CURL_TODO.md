@@ -319,7 +319,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Workspace manager binding
   - [x] Curl repositories/use cases
   - [x] Settings/log persistence bindings
-- [ ] Ensure view models remain properly separated from Android framework details where possible
+- [x] Ensure view models remain properly separated from Android framework details where possible
 
 ---
 

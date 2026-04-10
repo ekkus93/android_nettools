@@ -1,17 +1,12 @@
 package dev.nettools.android.ui.curl
 
-import android.content.Context
-import android.content.Intent
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nettools.android.domain.model.CurlRunStatus
+import dev.nettools.android.domain.usecase.curl.DispatchPendingCurlRunUseCase
 import dev.nettools.android.domain.usecase.curl.ObserveActiveCurlRunUseCase
 import dev.nettools.android.domain.usecase.curl.StartCurlRunUseCase
-import dev.nettools.android.service.CurlForegroundService
-import dev.nettools.android.service.CurlRunHolder
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -47,10 +42,9 @@ data class CurlRunnerUiState(
  */
 @HiltViewModel
 class CurlRunnerViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val startCurlRun: StartCurlRunUseCase,
+    private val dispatchPendingCurlRun: DispatchPendingCurlRunUseCase,
     private val observeActiveCurlRun: ObserveActiveCurlRunUseCase,
-    private val curlRunHolder: CurlRunHolder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CurlRunnerUiState())
@@ -106,11 +100,7 @@ class CurlRunnerViewModel @Inject constructor(
             }
 
             val pendingRun = requireNotNull(result.pendingRun)
-            curlRunHolder.setPendingRun(pendingRun)
-            ContextCompat.startForegroundService(
-                context,
-                Intent(context, CurlForegroundService::class.java),
-            )
+            dispatchPendingCurlRun(pendingRun)
             _navigateToResults.tryEmit(pendingRun.runId)
         }
     }

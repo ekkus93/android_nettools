@@ -1,16 +1,12 @@
 package dev.nettools.android.ui.workspace
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nettools.android.domain.model.WorkspaceEntry
 import dev.nettools.android.domain.repository.WorkspaceRepository
-import dev.nettools.android.domain.usecase.curl.ExportWorkspaceFileUseCase
-import dev.nettools.android.domain.usecase.curl.ImportWorkspaceFileUseCase
+import dev.nettools.android.domain.usecase.curl.ExportWorkspaceDocumentUseCase
+import dev.nettools.android.domain.usecase.curl.ImportWorkspaceDocumentUseCase
 import dev.nettools.android.util.CurlUserMessageFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,10 +31,9 @@ data class WorkspaceBrowserUiState(
  */
 @HiltViewModel
 class WorkspaceBrowserViewModel @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val workspaceRepository: WorkspaceRepository,
-    private val importWorkspaceFile: ImportWorkspaceFileUseCase,
-    private val exportWorkspaceFile: ExportWorkspaceFileUseCase,
+    private val importWorkspaceDocument: ImportWorkspaceDocumentUseCase,
+    private val exportWorkspaceDocument: ExportWorkspaceDocumentUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkspaceBrowserUiState())
@@ -49,9 +44,12 @@ class WorkspaceBrowserViewModel @Inject constructor(
     }
 
     /** Loads the requested workspace directory. */
-    fun load(path: String = _uiState.value.currentPath) {
+    fun load(
+        path: String = _uiState.value.currentPath,
+        preservedErrorMessage: String? = null,
+    ) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = preservedErrorMessage) }
             runCatching {
                 workspaceRepository.list(path)
             }.onSuccess { entries ->
@@ -61,6 +59,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
                         workspaceRootPath = workspaceRepository.getWorkspaceRootPath(),
                         entries = entries,
                         isLoading = false,
+                        errorMessage = preservedErrorMessage,
                     )
                 }
             }.onFailure { error ->
@@ -95,44 +94,48 @@ class WorkspaceBrowserViewModel @Inject constructor(
         }
         val targetPath = buildChildPath(_uiState.value.currentPath, trimmed)
         viewModelScope.launch {
+            var operationError: String? = null
             runCatching { workspaceRepository.createDirectory(targetPath) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("create the directory", error)) }
+                    operationError = CurlUserMessageFormatter.workspaceFailure("create the directory", error)
                 }
-            load()
+            load(preservedErrorMessage = operationError)
         }
     }
 
     /** Renames the given workspace entry. */
     fun rename(path: String, newName: String) {
         viewModelScope.launch {
+            var operationError: String? = null
             runCatching { workspaceRepository.rename(path, newName.trim()) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("rename the workspace item", error)) }
+                    operationError = CurlUserMessageFormatter.workspaceFailure("rename the workspace item", error)
                 }
-            load()
+            load(preservedErrorMessage = operationError)
         }
     }
 
     /** Moves the given workspace entry to the destination directory path. */
     fun move(path: String, destinationDirectoryPath: String) {
         viewModelScope.launch {
+            var operationError: String? = null
             runCatching { workspaceRepository.move(path, workspaceRepository.normalizePath(destinationDirectoryPath)) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("move the workspace item", error)) }
+                    operationError = CurlUserMessageFormatter.workspaceFailure("move the workspace item", error)
                 }
-            load()
+            load(preservedErrorMessage = operationError)
         }
     }
 
     /** Deletes the given workspace entry. */
     fun delete(path: String) {
         viewModelScope.launch {
+            var operationError: String? = null
             runCatching { workspaceRepository.delete(path) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("delete the workspace item", error)) }
+                    operationError = CurlUserMessageFormatter.workspaceFailure("delete the workspace item", error)
                 }
-            load()
+            load(preservedErrorMessage = operationError)
         }
     }
 
@@ -142,50 +145,32 @@ class WorkspaceBrowserViewModel @Inject constructor(
     }
 
     /** Imports the selected [uris] into the current workspace directory. */
-    fun importFiles(uris: List<Uri>) {
+    fun importFiles(documentUris: List<String>) {
         viewModelScope.launch {
-            uris.forEach { uri ->
+            var operationError: String? = null
+            documentUris.forEach { documentUri ->
                 runCatching {
-                    val fileName = queryDisplayName(uri)
-                    val input = context.contentResolver.openInputStream(uri)
-                        ?: error("Unable to open the selected file. Permission may have been revoked.")
-                    importWorkspaceFile(
+                    importWorkspaceDocument(
                         targetDirectoryPath = _uiState.value.currentPath,
-                        fileName = fileName,
-                        inputStream = input,
+                        documentUri = documentUri,
                     )
                 }.onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("import the file", error)) }
+                    operationError = CurlUserMessageFormatter.workspaceFailure("import the file", error)
                 }
             }
-            load()
+            load(preservedErrorMessage = operationError)
         }
     }
 
     /** Exports the workspace file at [path] into the selected [uri]. */
-    fun exportFile(path: String, uri: Uri) {
+    fun exportFile(path: String, destinationUri: String) {
         viewModelScope.launch {
             runCatching {
-                val output = context.contentResolver.openOutputStream(uri)
-                    ?: error("Unable to write the selected destination. Permission may have been revoked.")
-                exportWorkspaceFile(path = path, outputStream = output)
+                exportWorkspaceDocument(path = path, destinationUri = destinationUri)
             }.onFailure { error ->
                 _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("export the file", error)) }
             }
         }
-    }
-
-    private fun queryDisplayName(uri: Uri): String {
-        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (index >= 0) {
-                        return cursor.getString(index)
-                    }
-                }
-            }
-        return uri.lastPathSegment?.substringAfterLast('/') ?: "imported-file"
     }
 }
 

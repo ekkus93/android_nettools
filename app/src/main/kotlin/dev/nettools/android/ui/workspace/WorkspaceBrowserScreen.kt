@@ -74,7 +74,7 @@ fun WorkspaceBrowserScreen(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
         if (uris.isNotEmpty()) {
-            viewModel.importFiles(uris)
+            viewModel.importFiles(uris.map { it.toString() })
         }
     }
     val exportLauncher = rememberLauncherForActivityResult(
@@ -82,7 +82,7 @@ fun WorkspaceBrowserScreen(
     ) { uri ->
         val target = exportTarget
         if (uri != null && target != null) {
-            viewModel.exportFile(target.path, uri)
+            viewModel.exportFile(target.path, uri.toString())
         }
         exportTarget = null
     }

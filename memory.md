@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T18:16:33Z - GPT-5.4 - Decoupled curl viewmodels from Android service and SAF plumbing
+
+Closed the remaining curl ViewModel-separation follow-up by moving foreground-service startup into `DispatchPendingCurlRunUseCase` and picker-document import/export handling into dedicated Android-bound use cases, leaving `CurlRunnerViewModel` and `WorkspaceBrowserViewModel` free of direct `Context` or `ContentResolver` dependencies. This slice also fixed a workspace-browser bug where operation errors were being cleared during reload, added new unit tests for both ViewModels, and passed `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
+
 ## 2026-04-10T18:04:04Z - GPT-5.4 - Updated top-level curl docs for shipped runtime
 
 Closed the curl documentation follow-up by updating `README.md` to list the curl runner and workspace browser as shipped features, and by revising `docs/CURL_SPECS.md` to describe the actual embedded runtime architecture: bundled per-ABI curl executables for execution plus a libcurl-backed JNI bridge for metadata. After a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, `docs/CURL_TODO.md` was updated to mark the top-level-docs and final capability-doc items complete.
