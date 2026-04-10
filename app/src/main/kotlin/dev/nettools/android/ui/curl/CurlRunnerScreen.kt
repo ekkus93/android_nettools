@@ -64,12 +64,38 @@ fun CurlRunnerScreen(
         }
     }
 
+    CurlRunnerContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        onNavigateBack = navController::popBackStack,
+        onCommandChange = viewModel::onCommandChange,
+        onOpenResults = { runId -> navController.navigate(Routes.curlResults(runId)) },
+        onOpenWorkspace = { navController.navigate(Routes.CURL_WORKSPACE) },
+        onOpenLogs = { navController.navigate(Routes.CURL_LOGS) },
+        onOpenSettings = { navController.navigate(Routes.CURL_SETTINGS) },
+        onRun = viewModel::runCommand,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CurlRunnerContent(
+    state: CurlRunnerUiState,
+    snackbarHostState: SnackbarHostState,
+    onNavigateBack: () -> Unit,
+    onCommandChange: (String) -> Unit,
+    onOpenResults: (String) -> Unit,
+    onOpenWorkspace: () -> Unit,
+    onOpenLogs: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onRun: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Curl") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Navigate back",
@@ -96,7 +122,7 @@ fun CurlRunnerScreen(
 
             OutlinedTextField(
                 value = state.commandText,
-                onValueChange = viewModel::onCommandChange,
+                onValueChange = onCommandChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp),
@@ -121,7 +147,7 @@ fun CurlRunnerScreen(
                     runId = activeRunId,
                     commandText = state.activeCommandText,
                     status = state.activeStatus,
-                    onOpenResults = { navController.navigate(Routes.curlResults(activeRunId)) },
+                    onOpenResults = { onOpenResults(activeRunId) },
                 )
             }
 
@@ -130,19 +156,19 @@ fun CurlRunnerScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedButton(
-                    onClick = { navController.navigate(Routes.CURL_WORKSPACE) },
+                    onClick = onOpenWorkspace,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("Workspace")
                 }
                 OutlinedButton(
-                    onClick = { navController.navigate(Routes.CURL_LOGS) },
+                    onClick = onOpenLogs,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("Logs")
                 }
                 OutlinedButton(
-                    onClick = { navController.navigate(Routes.CURL_SETTINGS) },
+                    onClick = onOpenSettings,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("Settings")
@@ -150,7 +176,7 @@ fun CurlRunnerScreen(
             }
 
             Button(
-                onClick = viewModel::runCommand,
+                onClick = onRun,
                 enabled = !state.hasActiveRun,
                 modifier = Modifier
                     .fillMaxWidth()

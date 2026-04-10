@@ -66,12 +66,40 @@ fun CurlResultsScreen(
         }
     }
 
+    CurlResultsContent(
+        runId = runId,
+        state = state,
+        snackbarHostState = snackbarHostState,
+        showMetadata = showMetadata,
+        onNavigateBack = navController::popBackStack,
+        onToggleMetadata = { showMetadata = !showMetadata },
+        onCancel = if (state.canCancel) viewModel::cancelRun else null,
+        onSaveOutput = viewModel::saveOutput,
+        onCopyStdout = { copyToClipboard(context, "curl stdout", state.stdoutText) },
+        onCopyStderr = { copyToClipboard(context, "curl stderr", state.stderrText) },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CurlResultsContent(
+    runId: String,
+    state: CurlResultsUiState,
+    snackbarHostState: SnackbarHostState,
+    showMetadata: Boolean,
+    onNavigateBack: () -> Unit,
+    onToggleMetadata: () -> Unit,
+    onCancel: (() -> Unit)?,
+    onSaveOutput: () -> Unit,
+    onCopyStdout: () -> Unit,
+    onCopyStderr: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Curl results") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Navigate back",
@@ -111,9 +139,9 @@ fun CurlResultsScreen(
                 commandText = state.commandText,
                 status = state.status,
                 exitCode = state.exitCode,
-                onToggleMetadata = { showMetadata = !showMetadata },
-                onCancel = if (state.canCancel) viewModel::cancelRun else null,
-                onSaveOutput = viewModel::saveOutput,
+                onToggleMetadata = onToggleMetadata,
+                onCancel = onCancel,
+                onSaveOutput = onSaveOutput,
             )
 
             if (showMetadata) {
@@ -141,13 +169,13 @@ fun CurlResultsScreen(
                 title = "stdout",
                 text = state.stdoutText,
                 truncated = state.stdoutTruncated,
-                onCopy = { copyToClipboard(context, "curl stdout", state.stdoutText) },
+                onCopy = onCopyStdout,
             )
             OutputCard(
                 title = "stderr",
                 text = state.stderrText,
                 truncated = state.stderrTruncated,
-                onCopy = { copyToClipboard(context, "curl stderr", state.stderrText) },
+                onCopy = onCopyStderr,
             )
             Spacer(modifier = Modifier.height(12.dp))
         }

@@ -94,12 +94,83 @@ fun WorkspaceBrowserScreen(
         }
     }
 
+    WorkspaceBrowserContent(
+        state = state,
+        snackbarHostState = snackbarHostState,
+        createDialogOpen = createDialogOpen,
+        renameTarget = renameTarget,
+        moveTarget = moveTarget,
+        deleteTarget = deleteTarget,
+        onNavigateBack = navController::popBackStack,
+        onOpenCreateDialog = { createDialogOpen = true },
+        onDismissCreateDialog = { createDialogOpen = false },
+        onOpenRenameDialog = { renameTarget = it },
+        onDismissRenameDialog = { renameTarget = null },
+        onOpenMoveDialog = { moveTarget = it },
+        onDismissMoveDialog = { moveTarget = null },
+        onOpenDeleteDialog = { deleteTarget = it },
+        onDismissDeleteDialog = { deleteTarget = null },
+        onImportRequest = { importLauncher.launch(arrayOf("*/*")) },
+        onExportRequest = { entry ->
+            exportTarget = entry
+            exportLauncher.launch(entry.name)
+        },
+        onRefresh = viewModel::load,
+        onNavigateUp = viewModel::navigateUp,
+        onOpenDirectory = viewModel::openDirectory,
+        onCreateDirectory = { name ->
+            createDialogOpen = false
+            viewModel.createDirectory(name)
+        },
+        onRename = { path, newName ->
+            renameTarget = null
+            viewModel.rename(path, newName)
+        },
+        onMove = { path, destinationPath ->
+            moveTarget = null
+            viewModel.move(path, destinationPath)
+        },
+        onDelete = { path ->
+            deleteTarget = null
+            viewModel.delete(path)
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun WorkspaceBrowserContent(
+    state: WorkspaceBrowserUiState,
+    snackbarHostState: SnackbarHostState,
+    createDialogOpen: Boolean,
+    renameTarget: WorkspaceEntry?,
+    moveTarget: WorkspaceEntry?,
+    deleteTarget: WorkspaceEntry?,
+    onNavigateBack: () -> Unit,
+    onOpenCreateDialog: () -> Unit,
+    onDismissCreateDialog: () -> Unit,
+    onOpenRenameDialog: (WorkspaceEntry) -> Unit,
+    onDismissRenameDialog: () -> Unit,
+    onOpenMoveDialog: (WorkspaceEntry) -> Unit,
+    onDismissMoveDialog: () -> Unit,
+    onOpenDeleteDialog: (WorkspaceEntry) -> Unit,
+    onDismissDeleteDialog: () -> Unit,
+    onImportRequest: () -> Unit,
+    onExportRequest: (WorkspaceEntry) -> Unit,
+    onRefresh: () -> Unit,
+    onNavigateUp: () -> Unit,
+    onOpenDirectory: (String) -> Unit,
+    onCreateDirectory: (String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onMove: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Workspace") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Navigate back",
@@ -107,19 +178,19 @@ fun WorkspaceBrowserScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { createDialogOpen = true }) {
+                    IconButton(onClick = onOpenCreateDialog) {
                         Icon(
                             imageVector = Icons.Filled.CreateNewFolder,
                             contentDescription = "Create directory",
                         )
                     }
-                    IconButton(onClick = { importLauncher.launch(arrayOf("*/*")) }) {
+                    IconButton(onClick = onImportRequest) {
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
                             contentDescription = "Import files into workspace",
                         )
                     }
-                    IconButton(onClick = { viewModel.load() }) {
+                    IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = "Refresh workspace",
@@ -149,7 +220,7 @@ fun WorkspaceBrowserScreen(
                 )
                 if (state.currentPath != "/") {
                     TextButton(
-                        onClick = viewModel::navigateUp,
+                        onClick = onNavigateUp,
                         modifier = Modifier.align(Alignment.Start),
                     ) {
                         Text("Up one level")
@@ -175,14 +246,11 @@ fun WorkspaceBrowserScreen(
                         items(state.entries, key = { it.path }) { entry ->
                             WorkspaceEntryRow(
                                 entry = entry,
-                                onOpen = { if (entry.isDirectory) viewModel.openDirectory(entry.path) },
-                                onRename = { renameTarget = entry },
-                                onMove = { moveTarget = entry },
-                                onDelete = { deleteTarget = entry },
-                                onExport = {
-                                    exportTarget = entry
-                                    exportLauncher.launch(entry.name)
-                                },
+                                onOpen = { if (entry.isDirectory) onOpenDirectory(entry.path) },
+                                onRename = { onOpenRenameDialog(entry) },
+                                onMove = { onOpenMoveDialog(entry) },
+                                onDelete = { onOpenDeleteDialog(entry) },
+                                onExport = { onExportRequest(entry) },
                             )
                             HorizontalDivider()
                         }
@@ -197,11 +265,8 @@ fun WorkspaceBrowserScreen(
             title = "Create directory",
             initialValue = "",
             confirmLabel = "Create",
-            onDismiss = { createDialogOpen = false },
-            onConfirm = { name ->
-                createDialogOpen = false
-                viewModel.createDirectory(name)
-            },
+            onDismiss = onDismissCreateDialog,
+            onConfirm = onCreateDirectory,
         )
     }
 
@@ -210,11 +275,8 @@ fun WorkspaceBrowserScreen(
             title = "Rename ${entry.name}",
             initialValue = entry.name,
             confirmLabel = "Rename",
-            onDismiss = { renameTarget = null },
-            onConfirm = { newName ->
-                renameTarget = null
-                viewModel.rename(entry.path, newName)
-            },
+            onDismiss = onDismissRenameDialog,
+            onConfirm = { newName -> onRename(entry.path, newName) },
         )
     }
 
@@ -223,32 +285,26 @@ fun WorkspaceBrowserScreen(
             title = "Move ${entry.name}",
             initialValue = state.currentPath,
             confirmLabel = "Move",
-            onDismiss = { moveTarget = null },
-            onConfirm = { destinationPath ->
-                moveTarget = null
-                viewModel.move(entry.path, destinationPath)
-            },
+            onDismiss = onDismissMoveDialog,
+            onConfirm = { destinationPath -> onMove(entry.path, destinationPath) },
             label = "Destination directory path",
         )
     }
 
     deleteTarget?.let { entry ->
         AlertDialog(
-            onDismissRequest = { deleteTarget = null },
+            onDismissRequest = onDismissDeleteDialog,
             title = { Text("Delete ${entry.name}?") },
             text = { Text("This removes the selected workspace entry permanently.") },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        deleteTarget = null
-                        viewModel.delete(entry.path)
-                    },
+                    onClick = { onDelete(entry.path) },
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) {
+                TextButton(onClick = onDismissDeleteDialog) {
                     Text("Cancel")
                 }
             },

@@ -341,11 +341,11 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Remote partial-upload cleanup attempt on cancellation/failure
   - [x] Logging enabled vs disabled persistence behavior
   - [x] Workspace import/export flows
-- [ ] UI tests
-  - [ ] Run a valid command end-to-end through the UI
-  - [ ] Validation error display for malformed commands
-  - [ ] Results screen shows stdout/stderr separately
-  - [ ] Workspace browser CRUD flows
+- [x] UI tests
+  - [x] Run a valid command end-to-end through the UI
+  - [x] Validation error display for malformed commands
+  - [x] Results screen shows stdout/stderr separately
+  - [x] Workspace browser CRUD flows
 - [ ] Device/build validation
   - [x] Verify release ABI packaging (`arm64-v8a`, `armeabi-v7a`)
   - [x] Verify debug/dev `x86_64` packaging

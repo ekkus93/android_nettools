@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T18:54:48Z - GPT-5.4 - Added compile-checked curl Compose UI tests
+
+Finished the curl UI-test slice by extracting stable screen-content composables for the runner, results, and workspace browser, adding Compose `androidTest` dependencies, and writing instrumentation tests that cover valid-run submission, malformed-command validation messaging, stdout/stderr separation, and workspace CRUD dialog flows. The full validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest`; connected Android test execution and real-device behavior checks remain blocked until a device is available.
+
 ## 2026-04-10T18:39:40Z - GPT-5.4 - Expanded curl integration coverage and hardened executor cancellation cleanup
 
 Added the next curl validation slice with integration-style coverage for real embedded process execution, settings-driven history/log persistence, workspace-backed failed-download cleanup, remote partial-upload cleanup command execution, and workspace import/export flows. In the same slice, `ProcessCurlExecutor` cancellation cleanup was hardened to destroy the process inside a `NonCancellable` block, close all pipes, and wait for the stdout/stderr reader jobs so cancellation cannot strand blocked readers; the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
