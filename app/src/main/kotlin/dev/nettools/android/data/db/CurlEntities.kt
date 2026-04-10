@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import dev.nettools.android.domain.model.CurlRunOutput
 import dev.nettools.android.domain.model.CurlRunRecord
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.model.CurlRunSummary
 import dev.nettools.android.domain.model.CurlSettings
@@ -23,6 +24,7 @@ data class CurlRunEntity(
     val exitCode: Int?,
     val durationMillis: Long?,
     val loggingEnabled: Boolean,
+    val cleanupStatus: String?,
     val cleanupWarning: String?,
 ) {
     /** Converts this entity to its domain-model counterpart. */
@@ -37,6 +39,7 @@ data class CurlRunEntity(
         exitCode = exitCode,
         durationMillis = durationMillis,
         loggingEnabled = loggingEnabled,
+        cleanupStatus = cleanupStatus?.let(CurlCleanupStatus::valueOf),
         cleanupWarning = cleanupWarning,
     )
 }
@@ -53,6 +56,7 @@ fun CurlRunSummary.toEntity(): CurlRunEntity = CurlRunEntity(
     exitCode = exitCode,
     durationMillis = durationMillis,
     loggingEnabled = loggingEnabled,
+    cleanupStatus = cleanupStatus?.name,
     cleanupWarning = cleanupWarning,
 )
 

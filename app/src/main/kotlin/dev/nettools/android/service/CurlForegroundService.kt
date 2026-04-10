@@ -125,8 +125,13 @@ class CurlForegroundService : LifecycleService() {
                 exitCode = result.exitCode,
                 durationMillis = result.durationMillis,
                 effectiveCommandText = effectiveCommandText,
+                cleanupStatus = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED,
             )
-            curlRunHolder.updateStatus(status = finalStatus, exitCode = result.exitCode)
+            curlRunHolder.updateStatus(
+                status = finalStatus,
+                exitCode = result.exitCode,
+                cleanupStatus = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED,
+            )
             val notification = if (finalStatus == CurlRunStatus.COMPLETED) {
                 notificationHelper.createCurlCompletionNotification(
                     commandText = params.rawCommandText,
@@ -142,15 +147,20 @@ class CurlForegroundService : LifecycleService() {
             }
             notifyCompletion(params.runId, notification)
         } catch (e: CancellationException) {
-            val cleanupWarning = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
+            val cleanupResult = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
             runRepository.updateStatus(
                 runId = params.runId,
                 status = CurlRunStatus.CANCELLED,
                 finishedAt = System.currentTimeMillis(),
-                cleanupWarning = cleanupWarning,
+                cleanupWarning = cleanupResult.warning,
                 effectiveCommandText = effectiveCommandText,
+                cleanupStatus = cleanupResult.status,
             )
-            curlRunHolder.updateStatus(status = CurlRunStatus.CANCELLED, cleanupWarning = cleanupWarning)
+            curlRunHolder.updateStatus(
+                status = CurlRunStatus.CANCELLED,
+                cleanupWarning = cleanupResult.warning,
+                cleanupStatus = cleanupResult.status,
+            )
             notifyCompletion(
                 params.runId,
                 notificationHelper.createCurlCancellationNotification(
@@ -161,16 +171,21 @@ class CurlForegroundService : LifecycleService() {
             throw e
         } catch (e: Exception) {
             val failureReason = CurlUserMessageFormatter.executionFailure(e)
-            val cleanupWarning = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
+            val cleanupResult = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
             runRepository.updateStatus(
                 runId = params.runId,
                 status = CurlRunStatus.FAILED,
                 finishedAt = System.currentTimeMillis(),
-                cleanupWarning = cleanupWarning,
+                cleanupWarning = cleanupResult.warning,
                 effectiveCommandText = effectiveCommandText,
+                cleanupStatus = cleanupResult.status,
             )
             curlRunHolder.appendOutput(isStdout = false, chunk = failureReason)
-            curlRunHolder.updateStatus(status = CurlRunStatus.FAILED, cleanupWarning = cleanupWarning)
+            curlRunHolder.updateStatus(
+                status = CurlRunStatus.FAILED,
+                cleanupWarning = cleanupResult.warning,
+                cleanupStatus = cleanupResult.status,
+            )
             notifyCompletion(
                 params.runId,
                 notificationHelper.createCurlFailureNotification(

@@ -5,6 +5,7 @@ import dev.nettools.android.data.db.CurlRunOutputDao
 import dev.nettools.android.data.db.CurlRunOutputEntity
 import dev.nettools.android.data.db.toEntity
 import dev.nettools.android.data.db.toRecord
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlOutputStream
 import dev.nettools.android.domain.model.CurlRunOutput
 import dev.nettools.android.domain.model.CurlRunRecord
@@ -83,6 +84,7 @@ class CurlRunRepositoryImpl @Inject constructor(
         durationMillis: Long?,
         cleanupWarning: String?,
         effectiveCommandText: String?,
+        cleanupStatus: CurlCleanupStatus?,
     ) {
         val existing = runDao.getById(runId) ?: return
         runDao.upsert(
@@ -93,6 +95,7 @@ class CurlRunRepositoryImpl @Inject constructor(
                 durationMillis = durationMillis ?: existing.durationMillis,
                 cleanupWarning = cleanupWarning ?: existing.cleanupWarning,
                 effectiveCommandText = effectiveCommandText ?: existing.effectiveCommandText,
+                cleanupStatus = cleanupStatus?.name ?: existing.cleanupStatus,
             )
         )
     }

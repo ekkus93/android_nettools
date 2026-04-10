@@ -1,6 +1,7 @@
 package dev.nettools.android.service
 
 import dev.nettools.android.di.ApplicationScope
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlRunStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,9 +74,15 @@ class CurlRunHolder @Inject constructor(
         status: CurlRunStatus,
         exitCode: Int? = null,
         cleanupWarning: String? = null,
+        cleanupStatus: CurlCleanupStatus? = null,
     ) {
         _liveState.update { current ->
-            current.copy(status = status, exitCode = exitCode ?: current.exitCode, cleanupWarning = cleanupWarning ?: current.cleanupWarning)
+            current.copy(
+                status = status,
+                exitCode = exitCode ?: current.exitCode,
+                cleanupWarning = cleanupWarning ?: current.cleanupWarning,
+                cleanupStatus = cleanupStatus ?: current.cleanupStatus,
+            )
         }
         if (status != CurlRunStatus.IN_PROGRESS && status != CurlRunStatus.QUEUED && status != CurlRunStatus.VALIDATING) {
             _activeRunId.value = null
@@ -100,5 +107,6 @@ data class CurlLiveRunState(
     val stdoutText: String = "",
     val stderrText: String = "",
     val exitCode: Int? = null,
+    val cleanupStatus: CurlCleanupStatus? = null,
     val cleanupWarning: String? = null,
 )

@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CurlRunOutputEntity::class,
         AppSettingEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -138,6 +138,17 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE curl_runs ADD COLUMN effectiveCommandText TEXT"
+                )
+            }
+        }
+
+        /**
+         * Migration from version 5 to 6: records cleanup outcomes for curl runs.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE curl_runs ADD COLUMN cleanupStatus TEXT"
                 )
             }
         }

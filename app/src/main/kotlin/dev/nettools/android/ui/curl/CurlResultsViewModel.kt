@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlRunRecord
 import dev.nettools.android.domain.model.CurlRunOutput
 import dev.nettools.android.domain.model.CurlRunStatus
@@ -34,6 +35,7 @@ data class CurlResultsUiState(
     val stderrTruncated: Boolean = false,
     val exitCode: Int? = null,
     val durationMillis: Long? = null,
+    val cleanupStatus: CurlCleanupStatus? = null,
     val cleanupWarning: String? = null,
     val isMissing: Boolean = false,
     val saveMessage: String? = null,
@@ -145,6 +147,7 @@ private fun CurlRunRecord?.toUiState(
         stderrTruncated = output?.stderrTruncated ?: false,
         exitCode = if (isLive) liveState.exitCode ?: summary?.exitCode else summary?.exitCode,
         durationMillis = summary?.durationMillis,
+        cleanupStatus = if (isLive) liveState.cleanupStatus ?: summary?.cleanupStatus else summary?.cleanupStatus,
         cleanupWarning = if (isLive) liveState.cleanupWarning ?: summary?.cleanupWarning else summary?.cleanupWarning,
         isMissing = false,
     )

@@ -13,6 +13,15 @@ enum class CurlRunStatus {
 }
 
 /**
+ * Outcome of partial-file cleanup performed after a curl run.
+ */
+enum class CurlCleanupStatus {
+    SKIPPED,
+    SUCCEEDED,
+    FAILED,
+}
+
+/**
  * Output stream kinds emitted by curl.
  */
 enum class CurlOutputStream {
@@ -50,6 +59,7 @@ data class CurlSettings(
  * @property exitCode Native curl exit code, if available.
  * @property durationMillis Execution duration in milliseconds, if known.
  * @property loggingEnabled Whether this run was recorded with logging enabled.
+ * @property cleanupStatus Whether cleanup was skipped, succeeded, or failed.
  * @property cleanupWarning Optional warning when partial-file cleanup failed.
  */
 data class CurlRunSummary(
@@ -63,6 +73,7 @@ data class CurlRunSummary(
     val exitCode: Int? = null,
     val durationMillis: Long? = null,
     val loggingEnabled: Boolean = false,
+    val cleanupStatus: CurlCleanupStatus? = null,
     val cleanupWarning: String? = null,
 )
 

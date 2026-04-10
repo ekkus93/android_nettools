@@ -52,7 +52,11 @@ class CurlRunHolderTest {
             effectiveCommandText = "curl --version",
         )
         holder.appendOutput(isStdout = true, chunk = "hello")
-        holder.updateStatus(status = CurlRunStatus.COMPLETED, exitCode = 0)
+        holder.updateStatus(
+            status = CurlRunStatus.COMPLETED,
+            exitCode = 0,
+            cleanupStatus = dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED,
+        )
 
         val state = holder.liveState.value
         assertEquals("run-1", state.runId)
@@ -61,6 +65,7 @@ class CurlRunHolderTest {
         assertEquals(CurlRunStatus.COMPLETED, state.status)
         assertEquals("hello", state.stdoutText)
         assertEquals(0, state.exitCode)
+        assertEquals(dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED, state.cleanupStatus)
         assertNull(holder.activeRunId.value)
     }
 

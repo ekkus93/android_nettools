@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -99,7 +100,7 @@ class CurlCommandWorkspaceAdapterTest {
     }
 
     @Test
-    fun `cleanupPartialOutputs returns warning when a target cannot be deleted`() {
+    fun `cleanupPartialOutputs records failed cleanup when a target cannot be deleted`() {
         val stuckDirectory = tempDir.resolve("stuck").toFile().apply {
             mkdirs()
             resolve("child.txt").writeText("keep")
@@ -119,9 +120,34 @@ class CurlCommandWorkspaceAdapterTest {
             localPathMap = emptyMap(),
         )
 
-        val warning = adapter.cleanupPartialOutputs(prepared)
+        val result = adapter.cleanupPartialOutputs(prepared)
 
-        assertTrue(warning?.contains(stuckDirectory.absolutePath) == true)
+        assertEquals(dev.nettools.android.domain.model.CurlCleanupStatus.FAILED, result.status)
+        assertTrue(result.warning?.contains(stuckDirectory.absolutePath) == true)
+        assertTrue(!removableFile.exists())
+    }
+
+    @Test
+    fun `cleanupPartialOutputs records success when outputs are removed`() {
+        val removableFile = tempDir.resolve("partial.txt").toFile().apply {
+            writeText("partial")
+        }
+        val adapter = CurlCommandWorkspaceAdapter(workspaceRepository)
+        val prepared = PreparedCurlCommand(
+            command = ParsedCurlCommand(
+                originalText = "curl",
+                normalizedText = "curl",
+                tokens = listOf("curl"),
+                pathReferences = emptyList(),
+            ),
+            cleanupTargets = listOf(removableFile.absolutePath),
+            localPathMap = emptyMap(),
+        )
+
+        val result = adapter.cleanupPartialOutputs(prepared)
+
+        assertEquals(dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED, result.status)
+        assertNull(result.warning)
         assertTrue(!removableFile.exists())
     }
 }

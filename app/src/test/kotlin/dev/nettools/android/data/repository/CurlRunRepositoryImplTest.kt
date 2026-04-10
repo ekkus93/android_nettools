@@ -4,6 +4,7 @@ import dev.nettools.android.data.db.CurlRunDao
 import dev.nettools.android.data.db.CurlRunEntity
 import dev.nettools.android.data.db.CurlRunOutputDao
 import dev.nettools.android.data.db.CurlRunOutputEntity
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlOutputStream
 import dev.nettools.android.domain.model.CurlRunStatus
 import io.mockk.coEvery
@@ -41,6 +42,7 @@ class CurlRunRepositoryImplTest {
                     exitCode = 0,
                     durationMillis = 10L,
                     loggingEnabled = true,
+                    cleanupStatus = CurlCleanupStatus.SKIPPED.name,
                     cleanupWarning = null,
                 ),
             ),
@@ -110,6 +112,7 @@ class CurlRunRepositoryImplTest {
             exitCode = null,
             durationMillis = null,
             loggingEnabled = true,
+            cleanupStatus = null,
             cleanupWarning = null,
         )
 
@@ -121,7 +124,8 @@ class CurlRunRepositoryImplTest {
                     entity.id == "run-1" &&
                         entity.status == CurlRunStatus.CANCELLED.name &&
                         entity.finishedAt == null &&
-                        entity.exitCode == null
+                        entity.exitCode == null &&
+                        entity.cleanupStatus == null
                 },
             )
         }

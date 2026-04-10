@@ -215,8 +215,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [ ] Attempt best-effort cleanup of remote partial uploads
   - [ ] Surface a warning if remote cleanup fails
   - [ ] Ensure cancellation and failure paths both try cleanup
-- [ ] Add cleanup observability
-  - [ ] Record whether cleanup succeeded, failed, or was skipped
+- [x] Add cleanup observability
+  - [x] Record whether cleanup succeeded, failed, or was skipped
   - [x] Surface cleanup warnings in a user-friendly form
 
 ---

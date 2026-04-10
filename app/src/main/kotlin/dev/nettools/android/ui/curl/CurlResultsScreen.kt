@@ -211,6 +211,7 @@ private fun MetadataCard(
             DetailLine("Status", state.status.toDisplayLabel())
             DetailLine("Exit code", state.exitCode?.toString() ?: "Unavailable")
             DetailLine("Duration", state.durationMillis.toDurationLabel())
+            DetailLine("Cleanup", state.cleanupStatus.toDisplayLabel())
             if (showEffectiveCommand) {
                 Text(
                     text = "Executed command",
@@ -276,6 +277,14 @@ private fun DetailLine(label: String, value: String) {
         )
         Text(text = value, modifier = Modifier.weight(0.6f))
     }
+}
+
+@Composable
+private fun dev.nettools.android.domain.model.CurlCleanupStatus?.toDisplayLabel(): String = when (this) {
+    dev.nettools.android.domain.model.CurlCleanupStatus.SUCCEEDED -> "Succeeded"
+    dev.nettools.android.domain.model.CurlCleanupStatus.FAILED -> "Failed"
+    dev.nettools.android.domain.model.CurlCleanupStatus.SKIPPED -> "Skipped"
+    null -> "Not recorded"
 }
 
 @Composable

@@ -1,6 +1,7 @@
 package dev.nettools.android.domain.repository
 
 import dev.nettools.android.domain.model.CurlOutputStream
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlRunRecord
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.model.CurlRunSummary
@@ -38,6 +39,7 @@ interface CurlRunRepository {
         durationMillis: Long? = null,
         cleanupWarning: String? = null,
         effectiveCommandText: String? = null,
+        cleanupStatus: CurlCleanupStatus? = null,
     )
 
     /** Deletes all stored curl runs and retained output. */

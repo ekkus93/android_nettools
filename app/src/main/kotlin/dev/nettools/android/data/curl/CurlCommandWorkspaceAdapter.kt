@@ -1,6 +1,7 @@
 package dev.nettools.android.data.curl
 
 import dev.nettools.android.domain.model.CurlPathReferenceRole
+import dev.nettools.android.domain.model.CurlCleanupStatus
 import dev.nettools.android.domain.model.CurlValidationError
 import dev.nettools.android.domain.model.ParsedCurlCommand
 import dev.nettools.android.domain.model.ParsedCurlPathReference
@@ -77,17 +78,23 @@ class CurlCommandWorkspaceAdapter @Inject constructor(
     /**
      * Attempts to delete partial local output files after failure or cancellation.
      *
-     * @return warning text when one or more files could not be removed.
+     * @return cleanup details describing whether local outputs were removed.
      */
-    fun cleanupPartialOutputs(preparedCommand: PreparedCurlCommand): String? {
+    fun cleanupPartialOutputs(preparedCommand: PreparedCurlCommand): CurlCleanupResult {
+        if (preparedCommand.cleanupTargets.isEmpty()) {
+            return CurlCleanupResult(status = CurlCleanupStatus.SKIPPED)
+        }
         val failures = preparedCommand.cleanupTargets.filter { path ->
             val file = File(path)
             file.exists() && !file.delete()
         }
         return if (failures.isEmpty()) {
-            null
+            CurlCleanupResult(status = CurlCleanupStatus.SUCCEEDED)
         } else {
-            "Failed to clean up local partial output: ${failures.joinToString()}"
+            CurlCleanupResult(
+                status = CurlCleanupStatus.FAILED,
+                warning = "Failed to clean up local partial output: ${failures.joinToString()}",
+            )
         }
     }
 
@@ -143,3 +150,11 @@ private fun String.toDisplayToken(): String {
         "'" + replace("'", "'\\''") + "'"
     }
 }
+
+/**
+ * Cleanup outcome returned after attempting to delete local partial outputs.
+ */
+data class CurlCleanupResult(
+    val status: CurlCleanupStatus,
+    val warning: String? = null,
+)
