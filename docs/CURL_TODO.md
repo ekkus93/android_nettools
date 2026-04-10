@@ -32,10 +32,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Configure OpenSSL as the TLS backend
   - [x] Enable HTTP/2 if stable in the chosen build pipeline
   - [x] Explicitly defer HTTP/3 for v1
-- [ ] Control native packaging
+- [x] Control native packaging
   - [x] Ensure debug and release ABI filters match the approved matrix
   - [x] Keep APK/AAB packaging predictable
-  - [ ] Verify R8/packaging does not strip required native assets
+  - [x] Verify R8/packaging does not strip required native assets
 - [x] Expose native build metadata
   - [x] Surface embedded curl version
   - [x] Surface supported features/protocols from the compiled build
@@ -347,8 +347,8 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [ ] Results screen shows stdout/stderr separately
   - [ ] Workspace browser CRUD flows
 - [ ] Device/build validation
-  - [ ] Verify release ABI packaging (`arm64-v8a`, `armeabi-v7a`)
-  - [ ] Verify debug/dev `x86_64` packaging
+  - [x] Verify release ABI packaging (`arm64-v8a`, `armeabi-v7a`)
+  - [x] Verify debug/dev `x86_64` packaging
   - [ ] Verify foreground/background behavior on a real device
 
 ---

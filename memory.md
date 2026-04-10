@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T14:08:47Z - GPT-5.4 - Verified curl APK packaging for debug and release
+
+Validated the bundled curl packaging directly from built APK contents: the release APK keeps only `arm64-v8a` and `armeabi-v7a`, the debug APK includes `x86_64`, and both APK variants retain the bundled curl executables, CA bundle, supported-options catalog, and `libcurlbridge.so`. This was verified after a successful `./gradlew --no-daemon --console=plain assembleRelease` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and `docs/CURL_TODO.md` was updated to mark the native packaging and ABI validation items done.
+
 ## 2026-04-10T14:00:20Z - GPT-5.4 - Added persisted effective curl command metadata
 
 Finished the next curl slice by persisting the rewritten effective command text alongside the original user-entered command, exposing it through live run state and the results metadata UI so workspace path rewriting is visible instead of opaque. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the remaining file-translation visibility items done.
