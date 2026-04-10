@@ -11,6 +11,7 @@ import dev.nettools.android.domain.model.WorkspaceEntry
 import dev.nettools.android.domain.repository.WorkspaceRepository
 import dev.nettools.android.domain.usecase.curl.ExportWorkspaceFileUseCase
 import dev.nettools.android.domain.usecase.curl.ImportWorkspaceFileUseCase
+import dev.nettools.android.util.CurlUserMessageFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +67,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Workspace operation failed.",
+                        errorMessage = CurlUserMessageFormatter.workspaceFailure("load this workspace directory", error),
                     )
                 }
             }
@@ -96,7 +97,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { workspaceRepository.createDirectory(targetPath) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to create directory.") }
+                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("create the directory", error)) }
                 }
             load()
         }
@@ -107,7 +108,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { workspaceRepository.rename(path, newName.trim()) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to rename entry.") }
+                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("rename the workspace item", error)) }
                 }
             load()
         }
@@ -118,7 +119,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { workspaceRepository.move(path, workspaceRepository.normalizePath(destinationDirectoryPath)) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to move entry.") }
+                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("move the workspace item", error)) }
                 }
             load()
         }
@@ -129,7 +130,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { workspaceRepository.delete(path) }
                 .onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to delete entry.") }
+                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("delete the workspace item", error)) }
                 }
             load()
         }
@@ -154,7 +155,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
                         inputStream = input,
                     )
                 }.onFailure { error ->
-                    _uiState.update { it.copy(errorMessage = error.message ?: "Unable to import file.") }
+                    _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("import the file", error)) }
                 }
             }
             load()
@@ -169,7 +170,7 @@ class WorkspaceBrowserViewModel @Inject constructor(
                     ?: error("Unable to write the selected destination. Permission may have been revoked.")
                 exportWorkspaceFile(path = path, outputStream = output)
             }.onFailure { error ->
-                _uiState.update { it.copy(errorMessage = error.message ?: "Unable to export file.") }
+                _uiState.update { it.copy(errorMessage = CurlUserMessageFormatter.workspaceFailure("export the file", error)) }
             }
         }
     }

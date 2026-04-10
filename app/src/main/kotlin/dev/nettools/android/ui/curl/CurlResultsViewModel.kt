@@ -11,6 +11,7 @@ import dev.nettools.android.domain.repository.CurlRunRepository
 import dev.nettools.android.domain.usecase.curl.CancelActiveCurlRunUseCase
 import dev.nettools.android.domain.usecase.curl.ObserveActiveCurlRunUseCase
 import dev.nettools.android.domain.usecase.curl.SaveCurlOutputUseCase
+import dev.nettools.android.util.CurlUserMessageFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,8 +88,15 @@ class CurlResultsViewModel @Inject constructor(
             stderrTruncated = _uiState.value.stderrTruncated,
         )
         viewModelScope.launch {
-            val savedPath = saveCurlOutput(runId, output)
-            _uiState.update { it.copy(saveMessage = "Saved output to $savedPath") }
+            runCatching {
+                saveCurlOutput(runId, output)
+            }.onSuccess { savedPath ->
+                _uiState.update { it.copy(saveMessage = "Saved output to $savedPath") }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(saveMessage = CurlUserMessageFormatter.workspaceFailure("save the output", error))
+                }
+            }
         }
     }
 

@@ -17,6 +17,7 @@ import dev.nettools.android.data.curl.CurlExecutor
 import dev.nettools.android.domain.model.CurlOutputStream
 import dev.nettools.android.domain.model.CurlRunStatus
 import dev.nettools.android.domain.repository.CurlRunRepository
+import dev.nettools.android.util.CurlUserMessageFormatter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -148,6 +149,7 @@ class CurlForegroundService : LifecycleService() {
             )
             throw e
         } catch (e: Exception) {
+            val failureReason = CurlUserMessageFormatter.executionFailure(e)
             val cleanupWarning = workspaceAdapter.cleanupPartialOutputs(preparedCommand)
             runRepository.updateStatus(
                 runId = params.runId,
@@ -155,13 +157,13 @@ class CurlForegroundService : LifecycleService() {
                 finishedAt = System.currentTimeMillis(),
                 cleanupWarning = cleanupWarning,
             )
-            curlRunHolder.appendOutput(isStdout = false, chunk = (e.message ?: "Curl execution failed"))
+            curlRunHolder.appendOutput(isStdout = false, chunk = failureReason)
             curlRunHolder.updateStatus(status = CurlRunStatus.FAILED, cleanupWarning = cleanupWarning)
             notifyCompletion(
                 params.runId,
                 notificationHelper.createCurlFailureNotification(
                     commandText = params.rawCommandText,
-                    reason = e.message ?: "Curl execution failed",
+                    reason = failureReason,
                     channelId = CURL_CHANNEL_ID,
                 ),
             )

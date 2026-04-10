@@ -297,18 +297,18 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 ## 17. Error Handling
 
 - [ ] Map major failure classes to clear user messages
-  - [ ] Validation failure
+  - [x] Validation failure
   - [ ] Unsupported option/build mismatch
-  - [ ] Missing workspace file
-  - [ ] Import/export failure
-  - [ ] Native runtime failure
-  - [ ] TLS/certificate failure surfaced by curl
+  - [x] Missing workspace file
+  - [x] Import/export failure
+  - [x] Native runtime failure
+  - [x] TLS/certificate failure surfaced by curl
   - [ ] Cancellation
   - [ ] Partial remote cleanup failure
 - [ ] Ensure no silent failures
-  - [ ] Service cleanup paths
+  - [x] Service cleanup paths
   - [ ] Native bridge teardown
-  - [ ] Workspace import/export operations
+  - [x] Workspace import/export operations
 
 ---
 
@@ -326,13 +326,13 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 ## 19. Testing
 
 - [ ] Unit tests
-  - [ ] Command preprocessing for `curl ...` vs bare args
-  - [ ] Multiline continuation parsing
-  - [ ] Unclosed-quote validation
-  - [ ] Unknown-option validation
-  - [ ] Workspace path normalization
-  - [ ] File-argument translation
-  - [ ] Output-cap truncation behavior
+  - [x] Command preprocessing for `curl ...` vs bare args
+  - [x] Multiline continuation parsing
+  - [x] Unclosed-quote validation
+  - [x] Unknown-option validation
+  - [x] Workspace path normalization
+  - [x] File-argument translation
+  - [x] Output-cap truncation behavior
   - [ ] Cleanup decision logic
 - [ ] Integration tests
   - [ ] Native bridge happy-path execution
