@@ -98,26 +98,35 @@ fun CurlSettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val runtimeError = state.bundledRuntimeError
                     Text("Bundled curl runtime", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = state.bundledCurlVersion.ifBlank { "Loading runtime metadata..." },
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = "HTTP/2: ${if (state.http2Supported) "enabled" else "disabled"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "Protocols: ${state.bundledProtocols.joinToString()}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "Features: ${state.bundledFeatures.joinToString()}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (runtimeError != null) {
+                        Text(
+                            text = runtimeError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        Text(
+                            text = state.bundledCurlVersion.ifBlank { "Loading runtime metadata..." },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            text = "HTTP/2: ${if (state.http2Supported) "enabled" else "disabled"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Protocols: ${state.bundledProtocols.joinToString()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Features: ${state.bundledFeatures.joinToString()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
             OutlinedButton(

@@ -8,7 +8,9 @@ import dev.nettools.android.data.curl.BundledCurlBinaryProvider
 import dev.nettools.android.data.curl.BundledCurlOptionCatalog
 import dev.nettools.android.data.curl.CurlBinaryProvider
 import dev.nettools.android.data.curl.CurlExecutor
+import dev.nettools.android.data.curl.CurlRuntimeMetadataProvider
 import dev.nettools.android.data.curl.CurlOptionCatalog
+import dev.nettools.android.data.curl.NativeCurlBridge
 import dev.nettools.android.data.curl.ProcessCurlExecutor
 import dev.nettools.android.data.workspace.WorkspaceManager
 import dev.nettools.android.domain.repository.WorkspaceRepository
@@ -56,4 +58,13 @@ object CurlModule {
     fun provideCurlExecutor(
         impl: ProcessCurlExecutor,
     ): CurlExecutor = impl
+
+    /**
+     * Binds [NativeCurlBridge] as the active runtime metadata provider.
+     */
+    @Provides
+    @Singleton
+    fun provideCurlRuntimeMetadataProvider(
+        impl: NativeCurlBridge,
+    ): CurlRuntimeMetadataProvider = impl
 }

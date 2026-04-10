@@ -1,5 +1,6 @@
 package dev.nettools.android.data.curl
 
+import dev.nettools.android.util.CurlUserMessageFormatter
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,37 +9,65 @@ import javax.inject.Singleton
  * Thin JNI wrapper around metadata exposed by the bundled libcurl build.
  */
 @Singleton
-class NativeCurlBridge @Inject constructor() {
+class NativeCurlBridge @Inject constructor() : CurlRuntimeMetadataProvider {
 
-    init {
-        initializeGlobal()
+    override fun getRuntimeMetadata(): CurlRuntimeMetadataResult {
+        return try {
+            initializeGlobal()
+            try {
+                CurlRuntimeMetadataResult.Available(
+                    metadata = CurlRuntimeMetadata(
+                        bundledCurlVersion = nativeGetBundledCurlVersion(),
+                        supportedProtocols = nativeGetSupportedProtocols().toList(),
+                        supportedFeatures = nativeGetSupportedFeatures().toList(),
+                        http2Supported = nativeIsHttp2Supported(),
+                    ),
+                )
+            } finally {
+                shutdownGlobal()
+            }
+        } catch (_: UnsatisfiedLinkError) {
+            CurlRuntimeMetadataResult.Unavailable(CurlUserMessageFormatter.runtimeMetadataUnavailable())
+        } catch (_: IllegalStateException) {
+            CurlRuntimeMetadataResult.Unavailable(CurlUserMessageFormatter.runtimeMetadataUnavailable())
+        }
     }
 
-    /** Returns the bundled native curl bridge version string. */
-    fun getBundledCurlVersion(): String = nativeGetBundledCurlVersion()
-
-    /** Returns the protocol list reported by the native bridge. */
-    fun getSupportedProtocols(): List<String> = nativeGetSupportedProtocols().toList()
-
-    /** Returns the feature list reported by the native bridge. */
-    fun getSupportedFeatures(): List<String> = nativeGetSupportedFeatures().toList()
-
-    /** True when the bundled runtime reports HTTP/2 support. */
-    fun isHttp2Supported(): Boolean = nativeIsHttp2Supported()
-
     companion object {
+        private val libraryLoaded = AtomicBoolean(false)
         private val initialized = AtomicBoolean(false)
 
         /** Loads the native bridge and runs libcurl global initialization once. */
         fun initializeGlobal() {
-            if (initialized.compareAndSet(false, true)) {
-                System.loadLibrary("curlbridge")
-                nativeInitializeGlobal()
+            synchronized(this) {
+                if (libraryLoaded.compareAndSet(false, true)) {
+                    System.loadLibrary("curlbridge")
+                }
+                if (initialized.compareAndSet(false, true)) {
+                    try {
+                        nativeInitializeGlobal()
+                    } catch (error: RuntimeException) {
+                        initialized.set(false)
+                        throw error
+                    }
+                }
+            }
+        }
+
+        /** Releases libcurl global state after metadata has been read. */
+        fun shutdownGlobal() {
+            synchronized(this) {
+                if (initialized.compareAndSet(true, false)) {
+                    nativeCleanupGlobal()
+                }
             }
         }
 
         @JvmStatic
         private external fun nativeInitializeGlobal()
+
+        @JvmStatic
+        private external fun nativeCleanupGlobal()
     }
 
     private external fun nativeGetBundledCurlVersion(): String

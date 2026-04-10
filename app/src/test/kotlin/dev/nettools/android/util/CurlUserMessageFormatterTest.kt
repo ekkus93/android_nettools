@@ -16,6 +16,14 @@ class CurlUserMessageFormatterTest {
     }
 
     @Test
+    fun `runtime metadata unavailable returns explicit message`() {
+        assertEquals(
+            "Bundled curl runtime metadata is unavailable on this build.",
+            CurlUserMessageFormatter.runtimeMetadataUnavailable(),
+        )
+    }
+
+    @Test
     fun `execution failure maps missing files`() {
         val message = CurlUserMessageFormatter.executionFailure(
             FileNotFoundException("No such file or directory"),

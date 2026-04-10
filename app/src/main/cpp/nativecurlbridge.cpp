@@ -7,7 +7,8 @@
 
 namespace {
 
-std::once_flag curl_init_once;
+std::mutex curl_mutex;
+bool curl_initialized = false;
 
 void throwJavaException(JNIEnv* env, const char* class_name, const std::string& message) {
     jclass exception_class = env->FindClass(class_name);
@@ -66,14 +67,29 @@ Java_dev_nettools_android_data_curl_NativeCurlBridge_nativeInitializeGlobal(
     jclass /* clazz */
 ) {
     try {
-        std::call_once(curl_init_once, []() {
+        std::lock_guard<std::mutex> lock(curl_mutex);
+        if (!curl_initialized) {
             const CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
             if (code != CURLE_OK) {
                 throw std::runtime_error(curl_easy_strerror(code));
             }
-        });
+            curl_initialized = true;
+        }
     } catch (const std::exception& exception) {
         throwJavaException(env, "java/lang/IllegalStateException", exception.what());
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_dev_nettools_android_data_curl_NativeCurlBridge_nativeCleanupGlobal(
+    JNIEnv* /* env */,
+    jclass /* clazz */
+) {
+    std::lock_guard<std::mutex> lock(curl_mutex);
+    if (curl_initialized) {
+        curl_global_cleanup();
+        curl_initialized = false;
     }
 }
 

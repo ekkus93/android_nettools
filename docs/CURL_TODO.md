@@ -55,10 +55,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [x] Define a cancellable native execution handle
   - [x] Map UI/service cancellation to native cancellation
   - [x] Ensure cancellation is safe during uploads/downloads
-- [ ] Handle lifecycle and error boundaries
-  - [ ] Protect against native crashes propagating as silent app failures
-  - [ ] Convert native failures into explicit domain errors
-  - [ ] Ensure the bridge cleans up native resources on completion, failure, and cancellation
+- [x] Handle lifecycle and error boundaries
+  - [x] Protect against native crashes propagating as silent app failures
+  - [x] Convert native failures into explicit domain errors
+  - [x] Ensure the bridge cleans up native resources on completion, failure, and cancellation
 
 ---
 
@@ -307,7 +307,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [ ] Partial remote cleanup failure
 - [ ] Ensure no silent failures
   - [x] Service cleanup paths
-  - [ ] Native bridge teardown
+  - [x] Native bridge teardown
   - [x] Workspace import/export operations
 
 ---

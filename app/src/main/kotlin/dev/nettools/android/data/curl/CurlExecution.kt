@@ -39,11 +39,44 @@ data class CurlRuntime(
 )
 
 /**
+ * Snapshot of metadata reported by the bundled curl runtime.
+ */
+data class CurlRuntimeMetadata(
+    val bundledCurlVersion: String,
+    val supportedProtocols: List<String>,
+    val supportedFeatures: List<String>,
+    val http2Supported: Boolean,
+)
+
+/**
+ * Result of attempting to read bundled curl runtime metadata.
+ */
+sealed interface CurlRuntimeMetadataResult {
+    /**
+     * Metadata was read successfully.
+     */
+    data class Available(val metadata: CurlRuntimeMetadata) : CurlRuntimeMetadataResult
+
+    /**
+     * Metadata could not be read.
+     */
+    data class Unavailable(val message: String) : CurlRuntimeMetadataResult
+}
+
+/**
  * Resolves the executable path used to launch curl.
  */
 interface CurlBinaryProvider {
     /** Returns the resolved runtime paths needed to launch curl. */
     suspend fun getRuntime(): CurlRuntime
+}
+
+/**
+ * Reads metadata describing the bundled curl runtime.
+ */
+interface CurlRuntimeMetadataProvider {
+    /** Returns the bundled runtime metadata or an explicit unavailability reason. */
+    fun getRuntimeMetadata(): CurlRuntimeMetadataResult
 }
 
 /**

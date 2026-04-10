@@ -10,6 +10,9 @@ object CurlUserMessageFormatter {
     /** Returns the standard user-facing message for a cancelled curl run. */
     fun executionCancelled(): String = "Curl run cancelled by user."
 
+    /** Returns the standard user-facing message when runtime metadata cannot be loaded. */
+    fun runtimeMetadataUnavailable(): String = "Bundled curl runtime metadata is unavailable on this build."
+
     /**
      * Maps an execution-layer [error] into a user-facing message.
      */

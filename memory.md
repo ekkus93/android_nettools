@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T17:31:03Z - GPT-5.4 - Hardened bundled curl metadata loading
+
+Finished the native-metadata resilience slice by removing eager bridge initialization from app startup, switching settings metadata reads to an explicit availability result, showing a user-facing runtime error instead of crashing when metadata cannot load, and cleaning up libcurl global state immediately after each metadata snapshot. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the lifecycle/error-boundary and native-bridge-teardown items done.
+
 ## 2026-04-10T17:21:04Z - GPT-5.4 - Finished curl cancellation messaging slice
 
 Finished the curl cancellation-messaging slice by adding a shared explicit cancellation message, appending it to stderr/live output when a run is cancelled, and covering the formatter with a unit test. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and fixed the newly surfaced KAPT warning by moving the `kotlin-kapt` plugin to the bottom of `app/build.gradle.kts` so the build stays warning-free on non-cached annotation-processing runs.

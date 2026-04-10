@@ -3,7 +3,8 @@ package dev.nettools.android.ui.curl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.nettools.android.data.curl.NativeCurlBridge
+import dev.nettools.android.data.curl.CurlRuntimeMetadataProvider
+import dev.nettools.android.data.curl.CurlRuntimeMetadataResult
 import dev.nettools.android.domain.model.CurlSettings
 import dev.nettools.android.domain.repository.CurlSettingsRepository
 import dev.nettools.android.domain.repository.WorkspaceRepository
@@ -25,6 +26,7 @@ data class CurlSettingsUiState(
     val bundledProtocols: List<String> = emptyList(),
     val bundledFeatures: List<String> = emptyList(),
     val http2Supported: Boolean = false,
+    val bundledRuntimeError: String? = null,
 )
 
 /**
@@ -34,7 +36,7 @@ data class CurlSettingsUiState(
 class CurlSettingsViewModel @Inject constructor(
     private val settingsRepository: CurlSettingsRepository,
     private val workspaceRepository: WorkspaceRepository,
-    private val nativeCurlBridge: NativeCurlBridge,
+    private val runtimeMetadataProvider: CurlRuntimeMetadataProvider,
     private val clearCurlLogs: ClearCurlLogsUseCase,
 ) : ViewModel() {
 
@@ -42,13 +44,20 @@ class CurlSettingsViewModel @Inject constructor(
     val uiState: StateFlow<CurlSettingsUiState> = _uiState.asStateFlow()
 
     init {
-        _uiState.update {
-            it.copy(
-                bundledCurlVersion = nativeCurlBridge.getBundledCurlVersion(),
-                bundledProtocols = nativeCurlBridge.getSupportedProtocols(),
-                bundledFeatures = nativeCurlBridge.getSupportedFeatures(),
-                http2Supported = nativeCurlBridge.isHttp2Supported(),
-            )
+        _uiState.update { current ->
+            when (val metadataResult = runtimeMetadataProvider.getRuntimeMetadata()) {
+                is CurlRuntimeMetadataResult.Available -> current.copy(
+                    bundledCurlVersion = metadataResult.metadata.bundledCurlVersion,
+                    bundledProtocols = metadataResult.metadata.supportedProtocols,
+                    bundledFeatures = metadataResult.metadata.supportedFeatures,
+                    http2Supported = metadataResult.metadata.http2Supported,
+                    bundledRuntimeError = null,
+                )
+
+                is CurlRuntimeMetadataResult.Unavailable -> current.copy(
+                    bundledRuntimeError = metadataResult.message,
+                )
+            }
         }
         viewModelScope.launch {
             settingsRepository.observeSettings().collect { settings ->
