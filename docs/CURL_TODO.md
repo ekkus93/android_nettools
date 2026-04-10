@@ -1,0 +1,384 @@
+# Android NetTools — Curl TODO
+
+Detailed task and subtask list for implementing the libcurl-backed curl feature described in `docs/CURL_SPECS.md`.
+
+---
+
+## 1. Product and Documentation Setup
+
+- [ ] Create and maintain curl-specific docs
+  - [x] Add `docs/CURL_SPECS.md`
+  - [x] Add `docs/CURL_TODO.md`
+  - [ ] Update any top-level docs that list available tools once curl is implemented
+- [x] Confirm v1 defaults in code and docs
+  - [x] One active curl run at a time
+  - [x] Logging off by default
+  - [x] Saved command history off by default
+  - [x] Single global workspace root
+  - [x] Output caps: 4 MB stdout, 1 MB stderr
+
+---
+
+## 2. Native Build Infrastructure
+
+- [x] Add Android native build support
+  - [x] Enable NDK in the Android app module
+  - [x] Add CMake-based native build configuration
+  - [x] Define build inputs/outputs for native curl integration
+- [ ] Integrate libcurl
+  - [ ] Bring in libcurl sources or a controlled vendor/build strategy
+  - [ ] Build libcurl for `arm64-v8a` and `armeabi-v7a`
+  - [x] Add `x86_64` for debug/development builds
+  - [ ] Configure OpenSSL as the TLS backend
+  - [ ] Enable HTTP/2 if stable in the chosen build pipeline
+  - [ ] Explicitly defer HTTP/3 for v1
+- [ ] Control native packaging
+  - [x] Ensure debug and release ABI filters match the approved matrix
+  - [x] Keep APK/AAB packaging predictable
+  - [ ] Verify R8/packaging does not strip required native assets
+- [ ] Expose native build metadata
+  - [x] Surface embedded curl version
+  - [x] Surface supported features/protocols from the compiled build
+
+---
+
+## 3. Native Execution Bridge
+
+- [ ] Create a JNI bridge between Kotlin and native curl execution
+  - [ ] Define a request model for invoking curl runs
+  - [ ] Define a response/event model for stdout, stderr, progress, exit, and failures
+  - [ ] Stream stdout incrementally back to Kotlin
+  - [ ] Stream stderr incrementally back to Kotlin
+  - [ ] Surface final exit code
+  - [ ] Surface timing/summary metadata when requested
+- [ ] Add cancellation support
+  - [ ] Define a cancellable native execution handle
+  - [ ] Map UI/service cancellation to native cancellation
+  - [ ] Ensure cancellation is safe during uploads/downloads
+- [ ] Handle lifecycle and error boundaries
+  - [ ] Protect against native crashes propagating as silent app failures
+  - [ ] Convert native failures into explicit domain errors
+  - [ ] Ensure the bridge cleans up native resources on completion, failure, and cancellation
+
+---
+
+## 4. Curl Command Parsing and Validation
+
+- [x] Implement command preprocessing
+  - [x] Accept full raw commands starting with `curl`
+  - [x] Accept bare arguments and prepend `curl`
+  - [x] Collapse multiline shell-style continuations
+  - [x] Preserve quoted tokens correctly
+- [ ] Implement validation
+  - [x] Detect unclosed quotes before execution
+  - [x] Detect empty commands
+  - [x] Detect unsupported or misspelled options
+  - [ ] Base unknown-option validation on the actual embedded curl build
+  - [x] Produce inline user-facing validation messages
+- [x] Define parser behavior for path-bearing arguments
+  - [x] Identify file input flags
+  - [x] Identify file output flags
+  - [x] Identify upload/download patterns that need workspace translation
+  - [x] Keep raw command fidelity while still enabling Android-aware file handling
+
+---
+
+## 5. Workspace Model
+
+- [x] Design the workspace domain model
+  - [x] Define a single global workspace root
+  - [x] Persist the selected workspace root
+  - [x] Define workspace-relative path rules for Unix-style paths
+- [ ] Implement workspace storage management
+  - [x] Create app-side storage layout for workspace content
+  - [ ] Add import into workspace via Android picker
+  - [ ] Add export from workspace via Android picker
+  - [ ] Handle conflicts during import/export
+  - [ ] Handle missing or revoked picker permissions explicitly
+- [x] Implement workspace path translation
+  - [x] Map pasted Unix-style paths into workspace-managed paths
+  - [x] Normalize paths consistently
+  - [x] Prevent path traversal outside the workspace model
+  - [x] Keep displayed paths understandable to the user
+
+---
+
+## 6. Workspace Browser
+
+- [ ] Add a dedicated workspace browser screen
+  - [ ] Add navigation route and home entry points as needed
+  - [ ] Show files and directories in a mobile-friendly list
+  - [ ] Support loading, empty, and error states
+- [ ] Implement workspace file operations
+  - [ ] Create directory
+  - [ ] Rename file
+  - [ ] Rename directory
+  - [ ] Move file
+  - [ ] Move directory
+  - [ ] Delete file
+  - [ ] Delete directory
+- [ ] Implement import/export actions
+  - [ ] Import selected file(s) into workspace
+  - [ ] Export selected file(s) out of workspace
+  - [ ] Surface clear errors for partial or failed copy operations
+
+---
+
+## 7. Curl File Semantics
+
+- [ ] Define the supported file-argument translation layer
+  - [x] Handle local upload-style references
+  - [x] Handle local download-style references
+  - [x] Handle explicit output-file arguments
+  - [x] Handle config-file arguments if present
+  - [x] Handle common `@file` payload patterns
+- [ ] Implement translation from pasted command to executable local paths
+  - [ ] Rewrite workspace-rooted paths for native execution
+  - [ ] Preserve the visible user command or clearly show the effective path mapping
+  - [ ] Ensure translation is reversible enough for good error messages
+- [ ] Validate file existence/intent when possible
+  - [ ] Catch obviously missing local input files before run
+  - [ ] Catch obviously invalid destination patterns before run
+
+---
+
+## 8. Domain Layer for Curl Runs
+
+- [x] Add curl domain models
+  - [x] Curl command/request model
+  - [x] Curl run status model
+  - [x] Curl output chunk/result model
+  - [x] Curl run summary model
+  - [x] Curl validation error model
+- [x] Add curl repository/service interfaces
+  - [x] Execution repository
+  - [x] Workspace repository
+  - [x] Log/history repository
+- [ ] Add use cases
+  - [ ] Validate curl command
+  - [ ] Start curl run
+  - [ ] Observe active curl run
+  - [ ] Cancel active curl run
+  - [ ] Save output/logs
+  - [ ] Clear logs
+  - [ ] Import/export workspace files
+
+---
+
+## 9. Persistence Layer
+
+- [x] Add Room storage for curl data
+  - [x] Curl run metadata entity
+  - [x] Curl stdout storage entity or file-backed index
+  - [x] Curl stderr storage entity or file-backed index
+  - [x] Settings entity/keys for logging-enabled and history-enabled flags
+  - [x] Workspace configuration entity/keys
+- [x] Implement retention rules
+  - [x] Enforce 4 MB stdout cap per run
+  - [x] Enforce 1 MB stderr cap per run
+  - [x] Mark truncated output explicitly
+  - [x] Preserve metadata when output is truncated
+- [ ] Implement log/history behavior
+  - [x] Logging disabled by default
+  - [ ] Persist logs across runs when enabled
+  - [ ] Support manual clearing of logs
+  - [x] Keep saved command history off by default
+  - [ ] Do not allow editing/exporting saved commands
+
+---
+
+## 10. Background Execution Service
+
+- [ ] Add a foreground service for curl runs or extend the existing background execution model safely
+  - [ ] Guarantee one active curl job at a time
+  - [ ] Start foreground execution promptly
+  - [ ] Reconnect UI to active runs after navigation/process recreation where applicable
+- [ ] Implement notifications
+  - [ ] Active run notification
+  - [ ] Completion notification
+  - [ ] Failure notification
+  - [ ] Cancellation notification where appropriate
+- [ ] Wire cancellation through the full stack
+  - [ ] UI cancel button
+  - [ ] Notification cancel action
+  - [ ] Service-to-native cancellation handoff
+
+---
+
+## 11. Cleanup and Partial-File Handling
+
+- [ ] Define local cleanup behavior in code
+  - [ ] Delete failed/partial downloads
+  - [ ] Delete cancelled partial downloads
+  - [ ] Ensure local temp/work files are not leaked
+- [ ] Define remote cleanup behavior in code
+  - [ ] Attempt best-effort cleanup of remote partial uploads
+  - [ ] Surface a warning if remote cleanup fails
+  - [ ] Ensure cancellation and failure paths both try cleanup
+- [ ] Add cleanup observability
+  - [ ] Record whether cleanup succeeded, failed, or was skipped
+  - [ ] Surface cleanup warnings in a user-friendly form
+
+---
+
+## 12. UI — Home and Navigation
+
+- [ ] Add curl entry points to navigation
+  - [ ] Add a Curl route constant
+  - [ ] Add a Workspace Browser route constant
+  - [ ] Add a Curl Logs/History route constant if separate
+- [ ] Update home screen
+  - [ ] Add a Curl card/tile
+  - [ ] Add a sensible icon and subtitle
+
+---
+
+## 13. UI — Curl Runner Screen
+
+- [ ] Create the main curl execution screen
+  - [ ] Multiline command input
+  - [ ] Run button
+  - [ ] Validation feedback area
+  - [ ] Access point to workspace browser
+  - [ ] Access point to logs/history/settings
+- [ ] Add UX behaviors
+  - [ ] Disable Run while a job is active
+  - [ ] Show current run status
+  - [ ] Preserve draft command across configuration changes
+  - [ ] Handle pasted multiline commands cleanly
+
+---
+
+## 14. UI — Curl Results Screen
+
+- [ ] Build a polished results screen
+  - [ ] Separate stdout and stderr sections
+  - [ ] Show active/completed/failed/cancelled state clearly
+  - [ ] Show optional exit code and timing metadata on demand
+  - [ ] Indicate truncation when output caps are hit
+- [ ] Add actions
+  - [ ] Cancel
+  - [ ] Copy stdout
+  - [ ] Copy stderr
+  - [ ] Save output
+- [ ] Improve readability
+  - [ ] Normalize output presentation for mobile
+  - [ ] Keep stdout/stderr meaningfully distinct
+  - [ ] Avoid losing significant line structure
+
+---
+
+## 15. UI — Logs / History Screen
+
+- [ ] Add a simple first-pass logs/history screen
+  - [ ] List prior runs with status and timestamps
+  - [ ] Show whether logs/output were retained
+  - [ ] Show truncated/non-truncated state
+  - [ ] Allow manual clearing
+- [ ] Keep organization intentionally simple for v1
+  - [ ] Do not overdesign filtering/sorting unless needed to make it usable
+  - [ ] Leave room for later refinement
+
+---
+
+## 16. UI — Settings and Preferences
+
+- [ ] Add curl-related settings
+  - [ ] Enable/disable logging
+  - [ ] Enable/disable saved command history
+  - [ ] Select/change workspace root
+  - [ ] Clear logs
+- [ ] Surface consequences of settings
+  - [ ] Warn that enabling logs can persist sensitive command content
+  - [ ] Explain workspace-root behavior clearly
+
+---
+
+## 17. Error Handling
+
+- [ ] Map major failure classes to clear user messages
+  - [ ] Validation failure
+  - [ ] Unsupported option/build mismatch
+  - [ ] Missing workspace file
+  - [ ] Import/export failure
+  - [ ] Native runtime failure
+  - [ ] TLS/certificate failure surfaced by curl
+  - [ ] Cancellation
+  - [ ] Partial remote cleanup failure
+- [ ] Ensure no silent failures
+  - [ ] Service cleanup paths
+  - [ ] Native bridge teardown
+  - [ ] Workspace import/export operations
+
+---
+
+## 18. Dependency Injection and App Wiring
+
+- [ ] Add Hilt modules for curl components
+  - [ ] Native executor binding
+  - [ ] Workspace manager binding
+  - [ ] Curl repositories/use cases
+  - [ ] Settings/log persistence bindings
+- [ ] Ensure view models remain properly separated from Android framework details where possible
+
+---
+
+## 19. Testing
+
+- [ ] Unit tests
+  - [ ] Command preprocessing for `curl ...` vs bare args
+  - [ ] Multiline continuation parsing
+  - [ ] Unclosed-quote validation
+  - [ ] Unknown-option validation
+  - [ ] Workspace path normalization
+  - [ ] File-argument translation
+  - [ ] Output-cap truncation behavior
+  - [ ] Cleanup decision logic
+- [ ] Integration tests
+  - [ ] Native bridge happy-path execution
+  - [ ] Cancellation during active run
+  - [ ] Download cleanup on failure
+  - [ ] Remote partial-upload cleanup attempt on cancellation/failure
+  - [ ] Logging enabled vs disabled persistence behavior
+  - [ ] Workspace import/export flows
+- [ ] UI tests
+  - [ ] Run a valid command end-to-end through the UI
+  - [ ] Validation error display for malformed commands
+  - [ ] Results screen shows stdout/stderr separately
+  - [ ] Workspace browser CRUD flows
+- [ ] Device/build validation
+  - [ ] Verify release ABI packaging (`arm64-v8a`, `armeabi-v7a`)
+  - [ ] Verify debug/dev `x86_64` packaging
+  - [ ] Verify foreground/background behavior on a real device
+
+---
+
+## 20. Final Validation and Polish
+
+- [ ] Re-run project validation after implementation
+  - [ ] Run `./gradlew lintDebug`
+  - [ ] Run `./gradlew test`
+  - [ ] Run any existing Android tests relevant to touched UI/workspace flows
+- [ ] Validate user-visible behavior
+  - [ ] Workspace root selection
+  - [ ] Import/export flows
+  - [ ] Persistent logs behavior
+  - [ ] Output truncation messaging
+  - [ ] Remote cleanup warning behavior
+- [ ] Update docs to reflect the final embedded curl capability set
+
+---
+
+## Recommended Implementation Order
+
+1. Native build infrastructure
+2. JNI execution bridge
+3. Command parsing/validation
+4. Workspace model and path translation
+5. Domain/persistence layer
+6. Background execution service
+7. Curl runner UI
+8. Results/logs UI
+9. Workspace browser
+10. Cleanup hardening
+11. Final testing and polish

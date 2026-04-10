@@ -1,5 +1,49 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T11:48:33Z - GPT-5.4 - Completed curl foundation phase and started execution phase
+
+Implemented the first curl foundation slice: NDK/CMake/native-bridge scaffolding, curl domain and repository models, Room persistence for curl runs/settings, workspace path management, parser/validation groundwork, DI bindings, and unit tests. Updated `docs/CURL_TODO.md` to mark the completed foundation items and moved session tracking from phase 1 to phase 2.
+
+## 2026-04-10T10:11:56Z - GPT-5.4 - Added curl spec and implementation TODO docs
+
+Created `docs/CURL_SPECS.md` and `docs/CURL_TODO.md` to capture the agreed libcurl-backed paste/run curl feature, its workspace/logging/output rules, native packaging defaults, and a detailed implementation task breakdown.
+
+## 2026-04-10T10:07:08Z - GPT-5.4 - User chose separate workspace browser and flexible log UI
+
+For the planned curl feature, the workspace file manager should live in a separate browser screen, log-screen organization can start simple and improve later, and output retention should keep as much as practical with a reasonable cap chosen during implementation.
+
+## 2026-04-10T10:03:07Z - GPT-5.4 - User finalized curl logs, workspace, and validation preferences
+
+For the planned curl feature, logs should persist across runs, the workspace should be a single global root, users should be able to browse and manage workspace files/directories in-app, and pre-run validation should at least catch unclosed quotes and misspelled argument names.
+
+## 2026-04-10T09:52:15Z - GPT-5.4 - User fixed remaining curl workspace and ABI choices
+
+For the planned curl feature, user wants a user-selectable workspace root with picker-based import/export, warning surfacing when remote partial-upload cleanup fails, and native packaging defaults of `arm64-v8a` + `armeabi-v7a` for release with `x86_64` added for debug/dev.
+
+## 2026-04-10T09:47:21Z - GPT-5.4 - User clarified curl workspace, logging, and cleanup preferences
+
+For the planned curl feature, user prefers a workspace directory that acts like the root for Unix-style local paths, logging off by default with optional user-enabled logs and manual clearing, deletion of failed/partial downloads, and best-effort cleanup on cancel including remote partial uploads where possible.
+
+## 2026-04-10T09:37:13Z - GPT-5.4 - Captured detailed curl feature decisions
+
+User specified the planned curl feature as a libcurl-backed paste/run tool with full raw command input, multiline continuations, separate stdout/stderr, optional history, Android picker-based file path rewriting, single active run, background execution, cancellation, and partial-download cleanup.
+
+## 2026-04-10T09:24:08Z - GPT-5.4 - Discussing remaining curl feature specs
+
+Reviewed what still needs to be specified for the planned libcurl-backed paste/run curl feature before implementation starts.
+
+## 2026-04-10T09:23:22Z - GPT-5.4 - User approved paste/run curl direction
+
+User agreed with the paste/run-first direction for a future libcurl-backed curl feature.
+
+## 2026-04-10T09:22:12Z - GPT-5.4 - User prefers paste/run first for curl
+
+For the planned curl feature, user wants a paste/run experience first, with a form-based request builder deferred until later.
+
+## 2026-04-10T09:20:11Z - GPT-5.4 - User is open to libcurl for a future curl feature
+
+Discussed adding a curl feature with real parity expectations. User is comfortable using `libcurl`, which points toward a native Android integration path (NDK/JNI) rather than a Kotlin-only HTTP client.
+
 ## 2026-04-09T07:48:52Z - GPT-5.4 - Re-ran lint and tests successfully
 
 Validated the current working tree again with the standard Gradle checks used in this repo.
@@ -230,3 +274,14 @@ Improved the SCP transfer UI so Android Storage Access Framework URIs are no lon
 ### Build/test/install status
 `./gradlew --no-daemon --console=plain lintDebug test installDebug` → BUILD SUCCESSFUL  
 Installed on connected device `SM-A546E`
+
+## 2026-04-10T10:19:42Z - GPT-5.4 - Researched libcurl Android integration strategy
+
+Produced concrete implementation plan for libcurl integration (no files modified — research only). Key decisions:
+
+- **Build strategy**: `scripts/build_native_deps.sh` downloads pinned curl/OpenSSL/nghttp2 sources, cross-compiles via NDK 28 Clang, deposits static `.a` + headers into `app/src/main/cpp/prebuilt/{abi}/`. Prebuilts committed to git (~1.5 MB/ABI).
+- **Compile full curl tool sources** (not just libcurl C API) to avoid reimplementing the argv parser. Rename `main()` to `curl_tool_main()` via `-Dmain=curl_tool_main` at compile time. Link `libcurl_tool.a` + `libcurl.a`.
+- **JNI bridge**: `nativeInit`, `nativeGetVersion`, `nativeGetProtocols`, `nativeIsHttp2Supported`, `nativeStart(args[], workspaceDir, callback)`, `nativeCancel`, `nativeFreeHandle`. Uses pipe pairs + pthreads for streaming stdout/stderr to a Java callback interface wrapped in a Kotlin `callbackFlow`.
+- **CA bundle**: ship Mozilla `cacert.pem` as asset, extract to `filesDir` on first run, pass `--cainfo` as synthetic arg.
+- **Key pitfalls**: `CURLOPT_NOSIGNAL=1` required; `curl_global_init` once from Application.onCreate (not JNI_OnLoad); `_FORTIFY_SOURCE` conflicts building OpenSSL; curl tool global state requires Kotlin Mutex to enforce one-job-at-a-time.
+- **NDK**: Both NDK 27 and 28 present locally. Use NDK 28.2.13676358. ABI filters set per buildType (not defaultConfig) to avoid replacement-vs-merge issue in AGP Kotlin DSL.

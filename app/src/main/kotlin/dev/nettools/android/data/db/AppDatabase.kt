@@ -16,8 +16,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TransferHistoryEntity::class,
         KnownHostEntity::class,
         QueuedJobEntity::class,
+        CurlRunEntity::class,
+        CurlRunOutputEntity::class,
+        AppSettingEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +36,15 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** DAO for [QueuedJobEntity]. */
     abstract fun queuedJobDao(): QueuedJobDao
+
+    /** DAO for [CurlRunEntity]. */
+    abstract fun curlRunDao(): CurlRunDao
+
+    /** DAO for [CurlRunOutputEntity]. */
+    abstract fun curlRunOutputDao(): CurlRunOutputDao
+
+    /** DAO for [AppSettingEntity]. */
+    abstract fun appSettingDao(): AppSettingDao
 
     companion object {
         /**
@@ -69,6 +81,51 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE transfer_history ADD COLUMN errorMessage TEXT"
+                )
+            }
+        }
+
+        /**
+         * Migration from version 3 to 4: adds curl run, output, and app settings tables.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS curl_runs (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        commandText TEXT NOT NULL,
+                        normalizedCommandText TEXT NOT NULL,
+                        startedAt INTEGER NOT NULL,
+                        finishedAt INTEGER,
+                        status TEXT NOT NULL,
+                        exitCode INTEGER,
+                        durationMillis INTEGER,
+                        loggingEnabled INTEGER NOT NULL,
+                        cleanupWarning TEXT
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS curl_run_outputs (
+                        runId TEXT NOT NULL PRIMARY KEY,
+                        stdoutText TEXT NOT NULL,
+                        stderrText TEXT NOT NULL,
+                        stdoutBytes INTEGER NOT NULL,
+                        stderrBytes INTEGER NOT NULL,
+                        stdoutTruncated INTEGER NOT NULL,
+                        stderrTruncated INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS app_settings (
+                        `key` TEXT NOT NULL PRIMARY KEY,
+                        value TEXT NOT NULL
+                    )
+                    """.trimIndent()
                 )
             }
         }
