@@ -1,11 +1,13 @@
 # Android NetTools
 
-A Swiss Army knife of network utilities for Android, starting with SCP/SFTP file transfer.
+A Swiss Army knife of network utilities for Android, with SSH file transfer and an embedded curl runner.
 
 ## Features
 
 - **SCP Transfer** — upload and download files over SSH with streaming progress, resume support, and `.part` file safety
 - **SFTP Browser** — navigate remote directories, rename, delete, and create folders
+- **Curl Runner** — run embedded curl commands with raw paste/run input, validation, background execution, separate stdout/stderr, and optional persisted logs
+- **Workspace Browser** — manage curl workspace files with import, export, create, rename, move, and delete actions
 - **Saved Connections** — persist SSH connection profiles (passwords stored via Android Keystore)
 - **Transfer History** — view past transfers with status and size
 - **Transfer Progress** — live speed, ETA, and cancel support via foreground service
@@ -59,6 +61,7 @@ keytool -genkey -v -keystore nettools.jks -keyalg RSA -keysize 2048 \
 - **DI:** Hilt
 - **Database:** Room (connection profiles, transfer history, known hosts)
 - **SSH:** SSHJ (`com.hierynomus:sshj`)
+- **Curl:** bundled per-ABI curl executable plus a JNI metadata bridge backed by libcurl/OpenSSL
 - **Async:** Kotlin Coroutines + Flow
 - **Secure Storage:** EncryptedSharedPreferences (Android Keystore-backed)
 

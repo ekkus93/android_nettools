@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T18:04:04Z - GPT-5.4 - Updated top-level curl docs for shipped runtime
+
+Closed the curl documentation follow-up by updating `README.md` to list the curl runner and workspace browser as shipped features, and by revising `docs/CURL_SPECS.md` to describe the actual embedded runtime architecture: bundled per-ABI curl executables for execution plus a libcurl-backed JNI bridge for metadata. After a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, `docs/CURL_TODO.md` was updated to mark the top-level-docs and final capability-doc items complete.
+
 ## 2026-04-10T18:00:33Z - GPT-5.4 - Completed remote curl cleanup handling
 
 Finished the remote-cleanup slice by adding shared embedded-curl command-line construction, planning best-effort remote partial-upload cleanup for HTTP(S), FTP(S), and SFTP uploads, and invoking that cleanup from both failure and cancellation paths alongside local cleanup. The user-facing formatter now surfaces explicit warnings when remote cleanup cannot be completed, targeted unit coverage was added for the planner/executor behavior, and `docs/CURL_TODO.md` was updated to mark the remote-cleanup and related error-handling items done after a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.

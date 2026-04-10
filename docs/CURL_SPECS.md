@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Android NetTools** will add a libcurl-backed curl runner so users can execute real curl commands from Android with a mobile-friendly UI, persistent optional logs, and an app-managed workspace for local file operations.
+**Android NetTools** adds an embedded curl runner so users can execute real curl commands from Android with a mobile-friendly UI, persistent optional logs, and an app-managed workspace for local file operations.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### Summary
 
-Allow the user to paste and run raw curl commands using an embedded libcurl-based native runtime. The feature should stay close to real curl behavior while adapting local files, output, lifecycle, and storage to Android.
+Allow the user to paste and run raw curl commands using an embedded native curl runtime. The feature should stay close to real curl behavior while adapting local files, output, lifecycle, and storage to Android.
 
 ---
 
@@ -29,7 +29,7 @@ Allow the user to paste and run raw curl commands using an embedded libcurl-base
 
 #### 2. Execution Scope
 
-- The feature must execute any command supported by the embedded libcurl/curl build.
+- The feature must execute any command supported by the embedded curl build.
 - The embedded build should expose as broad a curl protocol surface as is practical for Android packaging.
 - The app will run one curl job at a time.
 - A running curl job must continue in the background if the user navigates away.
@@ -99,7 +99,7 @@ Allow the user to paste and run raw curl commands using an embedded libcurl-base
 | Requirement | Detail |
 |-------------|--------|
 | **Compatibility** | Android 8.0 (API 26) and above. |
-| **Execution model** | Use embedded native curl/libcurl rather than reimplementing curl behavior in Kotlin. |
+| **Execution model** | Use a bundled per-ABI curl executable for runs plus a libcurl-backed JNI bridge for runtime metadata, rather than reimplementing curl behavior in Kotlin. |
 | **Concurrency** | One active curl job at a time. |
 | **Storage model** | Use a single app-private app-managed workspace root for local file semantics. |
 | **Performance** | Stream output and file data; avoid unnecessary full-file in-memory buffering. |
@@ -123,11 +123,19 @@ Allow the user to paste and run raw curl commands using an embedded libcurl-base
 
 #### Native Defaults
 
-- Use `libcurl` as the execution engine.
+- Bundle a curl executable per supported ABI and invoke it with `ProcessBuilder`.
+- Use the JNI bridge to surface embedded curl version, features, and protocols in-app.
 - Use **OpenSSL** as the TLS backend.
 - Enable broad protocol support where practical.
 - Enable HTTP/2 if the build remains stable.
 - Defer HTTP/3 for v1.
+
+#### Embedded Capability Notes
+
+- Release builds ship native curl assets for `arm64-v8a` and `armeabi-v7a`.
+- Debug/development builds additionally ship `x86_64`.
+- Runtime metadata is read lazily so missing or broken native assets surface as UI errors instead of crashing app startup.
+- The supported protocol and feature lists shown in-app come from the compiled embedded runtime, not from static documentation.
 
 ---
 

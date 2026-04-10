@@ -6,10 +6,10 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
 
 ## 1. Product and Documentation Setup
 
-- [ ] Create and maintain curl-specific docs
+- [x] Create and maintain curl-specific docs
   - [x] Add `docs/CURL_SPECS.md`
   - [x] Add `docs/CURL_TODO.md`
-  - [ ] Update any top-level docs that list available tools once curl is implemented
+  - [x] Update any top-level docs that list available tools once curl is implemented
 - [x] Confirm v1 defaults in code and docs
   - [x] One active curl run at a time
   - [x] Logging off by default
@@ -365,7 +365,7 @@ Detailed task and subtask list for implementing the libcurl-backed curl feature 
   - [ ] Persistent logs behavior
   - [ ] Output truncation messaging
   - [ ] Remote cleanup warning behavior
-- [ ] Update docs to reflect the final embedded curl capability set
+- [x] Update docs to reflect the final embedded curl capability set
 
 ---
 
