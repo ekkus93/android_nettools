@@ -1,5 +1,9 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-10T19:22:39Z - GPT-5.4 - Remaining curl TODO items are explicitly device-blocked
+
+Rechecked `adb devices -l` after the final Kotlin-side curl work and there is still no connected Android device, so the only remaining unchecked items in `docs/CURL_TODO.md` are now annotated as blocked-by-hardware: connected Android test execution and real-device foreground/background validation. The SQL phase tracker already reflects this as a blocked final-delivery todo rather than unfinished implementation work.
+
 ## 2026-04-10T19:19:35Z - GPT-5.4 - Closed curl cancellation coverage and executor cleanup gap
 
 Finished the last Kotlin-side curl slice by extracting foreground-run execution into `CurlRunExecutionCoordinator`, adding deterministic cancellation coverage for an active run, and fixing cleanup so nonzero curl exit codes now trigger the same partial-output cleanup path as other failures. The same slice added JVM validation for workspace-root display and results-state propagation for truncation and cleanup warnings, and the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`; the only remaining unchecked curl TODO items now require a connected Android device.
