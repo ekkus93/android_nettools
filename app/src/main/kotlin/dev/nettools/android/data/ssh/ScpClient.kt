@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.StreamCopier
@@ -125,25 +126,27 @@ class ScpClient @Inject constructor() {
 
             try {
                 localFile.parentFile?.mkdirs()
-                sshClient.newSFTPClient().use { sftp ->
-                    val remoteFile = sftp.open(remotePath)
-                    try {
-                        val totalSize = remoteFile.fetchAttributes().size
-                        java.io.RandomAccessFile(localFile, "rw").use { raf ->
-                            raf.seek(resumeOffset)
-                            emitProgress(resumeOffset, totalSize)
-                            val buf = ByteArray(DEFAULT_BUFFER_SIZE)
-                            var offset = resumeOffset
-                            while (offset < totalSize) {
-                                val read = remoteFile.read(offset, buf, 0, buf.size)
-                                if (read <= 0) break
-                                raf.write(buf, 0, read)
-                                offset += read
-                                emitProgress(offset, totalSize)
+                runInterruptible {
+                    sshClient.newSFTPClient().use { sftp ->
+                        val remoteFile = sftp.open(remotePath)
+                        try {
+                            val totalSize = remoteFile.fetchAttributes().size
+                            java.io.RandomAccessFile(localFile, "rw").use { raf ->
+                                raf.seek(resumeOffset)
+                                emitProgress(resumeOffset, totalSize)
+                                val buf = ByteArray(DEFAULT_BUFFER_SIZE)
+                                var offset = resumeOffset
+                                while (offset < totalSize && isActive) {
+                                    val read = remoteFile.read(offset, buf, 0, buf.size)
+                                    if (read <= 0) break
+                                    raf.write(buf, 0, read)
+                                    offset += read
+                                    emitProgress(offset, totalSize)
+                                }
                             }
+                        } finally {
+                            remoteFile.close()
                         }
-                    } finally {
-                        remoteFile.close()
                     }
                 }
             } catch (e: Exception) {
@@ -236,7 +239,7 @@ class ScpClient @Inject constructor() {
 
         val ioJob = launch(Dispatchers.IO) {
             try {
-                block(listener)
+                runInterruptible { block(listener) }
             } catch (e: Exception) {
                 close(e)
                 return@launch

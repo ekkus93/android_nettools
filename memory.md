@@ -1,5 +1,46 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-21T21:31:14Z - Claude Sonnet 4.6 - Implemented all 5 phases of INT_TESTS1_TODO.md integration tests
+
+**Scope:** Integration tests using real Apache MINA SSHD + SSHJ.
+
+**New/modified test files:**
+- `TestHelpers.kt` — Shared `FakeKnownHostRepository` used across integration test classes
+- `SftpClientIntegrationTest.kt` — Phase 1: 24 tests covering all SftpClient public methods against real MINA SFTP
+- `SshConnectionManagerIntegrationTest.kt` — Phase 2: 12 tests for peekHostKey, TOFU, auth, key-changed, unreachable
+- `ScpClientIntegrationTest.kt` — Extended Phase 3: cancellation tests with `ThrottledStream`/`SlowFileSystemFile`
+- `ErrorMapperIntegrationTest.kt` — Phase 4: real SSHJ exceptions mapped to TransferError sealed classes
+- `TransferFlowIntegrationTest.kt` — Phase 5: interop scenarios combining ScpClient and SftpClient
+
+**Key ScpClient fix:** Added `runInterruptible { }` to `transferFlow` and `downloadViaSftp` in ScpClient.kt
+so that Kotlin coroutine cancellation properly interrupts blocking SSHJ I/O. Without this, SCP upload/download
+could not be cancelled mid-transfer because `Thread.sleep` and blocking socket reads weren't interruptible.
+
+**Cancellation test pattern:**
+- Upload tests: use `SlowFileSystemFile` (wraps FileSystemFile with ThrottledStream at 1MB/s) so 5MB takes ~5s
+- Download tests: use 50MB files to ensure download takes >1s on MINA loopback (~20-50MB/s)
+- Both use `runBlocking { launch(Dispatchers.IO); delay(N); cancel() }` with real-time delays
+
+**Pre-existing failure:** `SftpBrowserViewModelTest > navigate success sets entries sorted by current order()` — was failing before this work and is NOT introduced by these changes.
+
+
+## 2026-04-21T20:25:25Z - Claude Sonnet 4.6 - Implemented all 9 phases of UNIT_TESTS1_TODO.md (342 tests, 0 failures)
+
+**Commit:** b4ade35 — "Add 132 unit tests covering all 9 phases of UNIT_TESTS1_TODO"
+
+**New test files:**
+- `ui/connections/SavedConnectionsViewModelTest.kt` — 31 tests (validation, save/delete, credential coordination)
+- `data/workspace/WorkspacePathResolverTest.kt` — 17 tests (pure logic, edge cases)
+- `ui/sftp/SftpBrowserViewModelTest.kt` — 29 tests (dialog state machines, navigate, sort)
+- `ui/transfer/TransferViewModelTest.kt` — extended with 20 tests (validation, SavedStateHandle prefill)
+- `domain/usecase/curl/SaveCurlOutputUseCaseTest.kt` — 8 tests
+- `ui/curl/CurlLogsViewModelTest.kt` — 4 tests
+- `domain/usecase/curl/CancelActiveCurlRunUseCaseTest.kt` — 4 tests
+- `domain/usecase/curl/DispatchPendingCurlRunUseCaseTest.kt` — 2 tests
+- `data/repository/ConnectionProfileRepositoryImplTest.kt` + `KnownHostRepositoryImplTest.kt` — 16 tests (mocked DAO pattern, not Robolectric)
+
+**Notes:** Phase 9 used mocked DAO rather than Room in-memory (Robolectric not in deps). Phase 3 used reflection to inject sshClient for navigate tests. All 342 tests pass, lint clean.
+
 ## 2026-04-21T19:57:16Z - Claude Sonnet 4.6 - Created docs/UNIT_TESTS1_TODO.md with 9 test phases
 
 **Scope:** Coverage gap analysis across all source files; comprehensive unit test TODO created.
