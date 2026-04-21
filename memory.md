@@ -1,5 +1,25 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-21T21:46:34Z - Claude Sonnet 4.6 - Updated README.md and docs/SPECS.md to reflect full feature set
+
+**Commit:** 35a7a1c
+
+**README.md changes:**
+- Added Material You dynamic color to features list
+- Clarified ABI packaging (arm64-v8a, armeabi-v7a for release; +x86_64 for debug)
+- Added JAVA_HOME note and lint/test separation warning to build section
+- Expanded Architecture section (KSP, Room tables, Navigation Compose)
+- Added comprehensive Testing section (unit tests, integration tests with MINA SSHD, Compose UI tests)
+- Expanded Security Notes (content:// URI key staging, backup exclusion)
+
+**docs/SPECS.md changes:**
+- Expanded SCP section (resumable transfers, history filters, "Transfer again", transfer history statuses)
+- Expanded SFTP Browser from a brief "v1 Additions" blurb to a full feature section with NFRs
+- Added full Curl Runner section (summary + link to CURL_SPECS.md, all functional requirements, native binary details, UI screens)
+- Added Workspace Browser section (all file operations, path normalization, NFRs, UI screen)
+- Added Host-Key Verification (TOFU) section as a standalone feature with policy table and fingerprint format
+- Replaced "Open Questions" with "Resolved Design Questions" table
+
 ## 2026-04-21T21:31:14Z - Claude Sonnet 4.6 - Implemented all 5 phases of INT_TESTS1_TODO.md integration tests
 
 **Scope:** Integration tests using real Apache MINA SSHD + SSHJ.
