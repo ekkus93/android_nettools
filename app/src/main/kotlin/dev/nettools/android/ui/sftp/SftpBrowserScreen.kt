@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.AlertDialog
@@ -159,14 +160,12 @@ fun SftpBrowserScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // Breadcrumb trail
-            if (state.breadcrumbs.size > 1) {
-                BreadcrumbRow(
-                    breadcrumbs = state.breadcrumbs,
-                    onNavigate = { viewModel.navigate(it) },
-                )
-                HorizontalDivider()
-            }
+            // Breadcrumb trail — always visible
+            BreadcrumbRow(
+                breadcrumbs = state.breadcrumbs,
+                onNavigate = { viewModel.navigate(it) },
+            )
+            HorizontalDivider()
 
             PullToRefreshBox(
                 isRefreshing = state.isLoading,
@@ -338,17 +337,12 @@ private fun FileEntryRow(
         },
         trailingContent = {
             Box {
-                Row {
-                    if (!entry.isDirectory || pickerMode != RemotePickerMode.BROWSE) {
-                        // Show context menu button
-                    }
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            Icons.Filled.DriveFileRenameOutline,
-                            contentDescription = "More options for ${entry.name}",
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = "More options for ${entry.name}",
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 DropdownMenu(
                     expanded = menuExpanded,

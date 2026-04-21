@@ -1,8 +1,10 @@
 package dev.nettools.android.di
 
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.nettools.android.data.security.CredentialStore
 import dev.nettools.android.data.security.KnownHostsManager
@@ -21,10 +23,14 @@ object SshModule {
 
     /**
      * Provides the singleton [SshConnectionManager].
+     *
+     * @param context Application context required for ContentResolver-based key loading.
      */
     @Provides
     @Singleton
-    fun provideSshConnectionManager(): SshConnectionManager = SshConnectionManager()
+    fun provideSshConnectionManager(
+        @ApplicationContext context: Context,
+    ): SshConnectionManager = SshConnectionManager(context)
 
     /**
      * Provides the singleton [ScpClient].

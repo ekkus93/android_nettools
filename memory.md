@@ -1,148 +1,19 @@
 # Android NetTools — Copilot Memory
 
-## 2026-04-10T21:23:47Z - GPT-5.4 - Connected Android tests passed once the phone stayed awake and unlocked
-
-Retried `connectedDebugAndroidTest` after confirming the attached `SM_A546E` was `mWakefulness=Awake`, `mDreamingLockscreen=false`, and focused on the launcher instead of the notification shade. The run completed successfully, which clears the earlier validation blocker for the recent curl/workspace JVM-test additions; the current validation set is green with `lintDebug`, `test`, and `connectedDebugAndroidTest`.
-
-## 2026-04-10T21:20:33Z - GPT-5.4 - Expanded curl and workspace JVM coverage; connected Compose tests still depend on device lockscreen state
-
-Added direct JVM tests for `BundledCurlBinaryProvider` success/failure paths, plus broader ViewModel coverage for `CurlResultsViewModel`, `CurlRunnerViewModel`, and `WorkspaceBrowserViewModel` covering missing/live state handling, cancellation/save-output behavior, active-run mirroring, blank-name validation, normalized move destinations, navigation, and friendly workspace error mapping. `./gradlew --no-daemon --console=plain lintDebug test` passes after these additions, but further high-value Compose screen coverage is still gated by the attached phone repeatedly reporting `mDreamingLockscreen=true`, which causes connected Compose tests to fail before a hierarchy is available.
-
-## 2026-04-10T21:05:55Z - GPT-5.4 - Added direct bundled-curl provider unit tests; connected Compose tests can be blocked by dream lockscreen
-
-Added focused JVM coverage for `BundledCurlBinaryProvider`, including successful runtime resolution, missing native executable, no supported ABI, and CA-bundle extraction failure cleanup. During validation, `lintDebug` and `./gradlew test` passed, but `connectedDebugAndroidTest` repeatedly failed for an environmental reason on the attached phone: `dumpsys window` kept reporting `mDreamingLockscreen=true`, which prevented the Compose test activities from exposing a hierarchy even after wake/dismiss-keyguard adb commands.
-
-## 2026-04-10T20:43:51Z - GPT-5.4 - Curl utility buttons now wrap by row instead of wrapping labels
-
-Adjusted the Curl runner's secondary action layout so the Workspace/Logs/Settings buttons use a wrapping `FlowRow` with single-line labels instead of a forced three-column row. This keeps "Workspace" from breaking into two lines on phone-width layouts while preserving the existing actions and validation flow.
-
-## 2026-04-10T20:17:33Z - GPT-5.4 - Fixed real-device curl runtime packaging and closed final curl validation
-
-The final curl-delivery slice moved the bundled curl executable into per-ABI `jniLibs` as `libcurl_exec.so`, enabled legacy native-library extraction, and updated runtime lookup to launch the executable from `applicationInfo.nativeLibraryDir`; this fixed the on-device "embedded curl runtime unavailable" failure that only showed up in the app process. After that fix, curl was manually verified on the connected `SM_A546E` across home/relaunch with a live foreground run, `docs/CURL_TODO.md` was fully closed, `./gradlew --no-daemon --console=plain lintDebug` passed, and `./gradlew --no-daemon --console=plain test assembleDebug assembleDebugAndroidTest connectedDebugAndroidTest` also passed with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
-
-## 2026-04-10T19:22:39Z - GPT-5.4 - Remaining curl TODO items are explicitly device-blocked
-
-Rechecked `adb devices -l` after the final Kotlin-side curl work and there is still no connected Android device, so the only remaining unchecked items in `docs/CURL_TODO.md` are now annotated as blocked-by-hardware: connected Android test execution and real-device foreground/background validation. The SQL phase tracker already reflects this as a blocked final-delivery todo rather than unfinished implementation work.
-
-## 2026-04-10T19:19:35Z - GPT-5.4 - Closed curl cancellation coverage and executor cleanup gap
-
-Finished the last Kotlin-side curl slice by extracting foreground-run execution into `CurlRunExecutionCoordinator`, adding deterministic cancellation coverage for an active run, and fixing cleanup so nonzero curl exit codes now trigger the same partial-output cleanup path as other failures. The same slice added JVM validation for workspace-root display and results-state propagation for truncation and cleanup warnings, and the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`; the only remaining unchecked curl TODO items now require a connected Android device.
-
-## 2026-04-10T18:54:48Z - GPT-5.4 - Added compile-checked curl Compose UI tests
-
-Finished the curl UI-test slice by extracting stable screen-content composables for the runner, results, and workspace browser, adding Compose `androidTest` dependencies, and writing instrumentation tests that cover valid-run submission, malformed-command validation messaging, stdout/stderr separation, and workspace CRUD dialog flows. The full validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug assembleDebugAndroidTest`; connected Android test execution and real-device behavior checks remain blocked until a device is available.
-
-## 2026-04-10T18:39:40Z - GPT-5.4 - Expanded curl integration coverage and hardened executor cancellation cleanup
-
-Added the next curl validation slice with integration-style coverage for real embedded process execution, settings-driven history/log persistence, workspace-backed failed-download cleanup, remote partial-upload cleanup command execution, and workspace import/export flows. In the same slice, `ProcessCurlExecutor` cancellation cleanup was hardened to destroy the process inside a `NonCancellable` block, close all pipes, and wait for the stdout/stderr reader jobs so cancellation cannot strand blocked readers; the full `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
-
-## 2026-04-10T18:16:33Z - GPT-5.4 - Decoupled curl viewmodels from Android service and SAF plumbing
-
-Closed the remaining curl ViewModel-separation follow-up by moving foreground-service startup into `DispatchPendingCurlRunUseCase` and picker-document import/export handling into dedicated Android-bound use cases, leaving `CurlRunnerViewModel` and `WorkspaceBrowserViewModel` free of direct `Context` or `ContentResolver` dependencies. This slice also fixed a workspace-browser bug where operation errors were being cleared during reload, added new unit tests for both ViewModels, and passed `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
-
-## 2026-04-10T18:04:04Z - GPT-5.4 - Updated top-level curl docs for shipped runtime
-
-Closed the curl documentation follow-up by updating `README.md` to list the curl runner and workspace browser as shipped features, and by revising `docs/CURL_SPECS.md` to describe the actual embedded runtime architecture: bundled per-ABI curl executables for execution plus a libcurl-backed JNI bridge for metadata. After a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, `docs/CURL_TODO.md` was updated to mark the top-level-docs and final capability-doc items complete.
-
-## 2026-04-10T18:00:33Z - GPT-5.4 - Completed remote curl cleanup handling
-
-Finished the remote-cleanup slice by adding shared embedded-curl command-line construction, planning best-effort remote partial-upload cleanup for HTTP(S), FTP(S), and SFTP uploads, and invoking that cleanup from both failure and cancellation paths alongside local cleanup. The user-facing formatter now surfaces explicit warnings when remote cleanup cannot be completed, targeted unit coverage was added for the planner/executor behavior, and `docs/CURL_TODO.md` was updated to mark the remote-cleanup and related error-handling items done after a green `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
-
-## 2026-04-10T17:50:08Z - GPT-5.4 - Migrated curl annotation processing to KSP and hardened runtime installs
-
-Finished the next curl maintenance slice by migrating the app module from kapt to KSP for both Hilt and Room so full validation no longer emits the unrecognized processor-option warning on real annotation-processing runs. In the same slice, the bundled curl runtime installer now writes through a temporary file and renames atomically so failed asset extraction does not leave partial runtime files behind, and `docs/CURL_TODO.md` was updated to mark local cleanup and unit-test coverage complete.
-
-## 2026-04-10T17:31:03Z - GPT-5.4 - Hardened bundled curl metadata loading
-
-Finished the native-metadata resilience slice by removing eager bridge initialization from app startup, switching settings metadata reads to an explicit availability result, showing a user-facing runtime error instead of crashing when metadata cannot load, and cleaning up libcurl global state immediately after each metadata snapshot. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the lifecycle/error-boundary and native-bridge-teardown items done.
-
-## 2026-04-10T17:21:04Z - GPT-5.4 - Finished curl cancellation messaging slice
-
-Finished the curl cancellation-messaging slice by adding a shared explicit cancellation message, appending it to stderr/live output when a run is cancelled, and covering the formatter with a unit test. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and fixed the newly surfaced KAPT warning by moving the `kotlin-kapt` plugin to the bottom of `app/build.gradle.kts` so the build stays warning-free on non-cached annotation-processing runs.
-
-## 2026-04-10T17:10:53Z - GPT-5.4 - User chose fixed app-private curl workspace for v1
-
-For the remaining workspace-root design, the user chose a v1 that keeps curl’s workspace as a fixed app-private root and relies on Android pickers for import/export around that root instead of trying to use arbitrary SAF folder URIs as native curl filesystem paths. Updated the curl spec/TODO docs to reflect that the app-private workspace model is intentional rather than a temporary gap.
-
-## 2026-04-10T14:16:10Z - GPT-5.4 - Added cleanup outcome tracking for curl runs
-
-Finished the cleanup-observability slice by recording cleanup outcome state (`skipped`, `succeeded`, or `failed`) for curl runs, persisting it through Room, surfacing it in live state, and showing it on the results screen alongside any cleanup warning text. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the cleanup observability items done.
-
-## 2026-04-10T14:08:47Z - GPT-5.4 - Verified curl APK packaging for debug and release
-
-Validated the bundled curl packaging directly from built APK contents: the release APK keeps only `arm64-v8a` and `armeabi-v7a`, the debug APK includes `x86_64`, and both APK variants retain the bundled curl executables, CA bundle, supported-options catalog, and `libcurlbridge.so`. This was verified after a successful `./gradlew --no-daemon --console=plain assembleRelease` run with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and `docs/CURL_TODO.md` was updated to mark the native packaging and ABI validation items done.
-
-## 2026-04-10T14:00:20Z - GPT-5.4 - Added persisted effective curl command metadata
-
-Finished the next curl slice by persisting the rewritten effective command text alongside the original user-entered command, exposing it through live run state and the results metadata UI so workspace path rewriting is visible instead of opaque. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`, and updated `docs/CURL_TODO.md` to mark the remaining file-translation visibility items done.
-
-## 2026-04-10T13:44:36Z - GPT-5.4 - Completed embedded curl runtime phase
-
-Finished the embedded curl runtime slice by replacing the placeholder PATH-based runtime with bundled per-ABI curl executables plus generated OpenSSL/nghttp2/libcurl prebuilts, wiring DI to the bundled runtime and option catalog, and linking the JNI bridge against the compiled libcurl build for real version/protocol/feature metadata. `scripts/build_native_deps.sh` now generates release assets for `arm64-v8a` and `armeabi-v7a`, debug assets for `x86_64`, and the full app validation pass succeeded with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64` using `./gradlew --no-daemon --console=plain lintDebug test assembleDebug`.
-
-## 2026-04-10T13:02:40Z - GPT-5.4 - Added direct tests for curl workspace adapter behavior
-
-Added targeted unit coverage for the curl workspace adapter so path rewriting, pre-run validation, and partial-output cleanup logic are exercised directly instead of only through higher-level flows. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 and updated `docs/CURL_TODO.md` to mark the cleanup-decision unit-test item done.
-
-## 2026-04-10T12:57:20Z - GPT-5.4 - Added curl error-message mapping slice
-
-Improved curl-facing error handling by adding shared user-message mapping for execution failures, workspace import/export issues, and save-output failures, then covered the mappings with new unit tests. Revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 and updated `docs/CURL_TODO.md` for the completed error-handling and unit-test items.
-
-## 2026-04-10T12:49:20Z - GPT-5.4 - Added curl workspace import-export and path cleanup slice
-
-Implemented the next curl slice: workspace path rewriting before execution, pre-run local path validation, partial local output cleanup with surfaced warnings, save-output-to-workspace support, and workspace browser import/export via Android pickers. Updated `docs/CURL_TODO.md` to mark the newly completed items and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17 after disabling empty unit-test KAPT tasks to remove their warning noise.
-
-## 2026-04-10T12:31:12Z - GPT-5.4 - Completed curl UI phase
-
-Finished the curl UI slice: added the home-card entry and routes, runner/results/logs/settings/workspace screens, active-run reconnect behavior, completion/failure/cancellation notifications, and settings/log-history controls. Updated `docs/CURL_TODO.md` to mark the completed UI and notification items and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.
-
-## 2026-04-10T12:05:50Z - GPT-5.4 - Completed curl execution scaffold phase
-
-Finished the second curl implementation slice: added the execution request/result seam, process-backed executor placeholder, curl foreground service, live run holder, notification wiring, and start/observe/cancel/clear-log use cases. Updated `docs/CURL_TODO.md` to mark the execution-layer items that are now truly in place, and revalidated with `./gradlew --no-daemon --console=plain lintDebug test assembleDebug` using JDK 17.
-
-## 2026-04-10T11:48:33Z - GPT-5.4 - Completed curl foundation phase and started execution phase
-
-Implemented the first curl foundation slice: NDK/CMake/native-bridge scaffolding, curl domain and repository models, Room persistence for curl runs/settings, workspace path management, parser/validation groundwork, DI bindings, and unit tests. Updated `docs/CURL_TODO.md` to mark the completed foundation items and moved session tracking from phase 1 to phase 2.
-
-## 2026-04-10T10:11:56Z - GPT-5.4 - Added curl spec and implementation TODO docs
-
-Created `docs/CURL_SPECS.md` and `docs/CURL_TODO.md` to capture the agreed libcurl-backed paste/run curl feature, its workspace/logging/output rules, native packaging defaults, and a detailed implementation task breakdown.
-
-## 2026-04-10T10:07:08Z - GPT-5.4 - User chose separate workspace browser and flexible log UI
-
-For the planned curl feature, the workspace file manager should live in a separate browser screen, log-screen organization can start simple and improve later, and output retention should keep as much as practical with a reasonable cap chosen during implementation.
-
-## 2026-04-10T10:03:07Z - GPT-5.4 - User finalized curl logs, workspace, and validation preferences
-
-For the planned curl feature, logs should persist across runs, the workspace should be a single global root, users should be able to browse and manage workspace files/directories in-app, and pre-run validation should at least catch unclosed quotes and misspelled argument names.
-
-## 2026-04-10T09:52:15Z - GPT-5.4 - User fixed remaining curl workspace and ABI choices
-
-For the planned curl feature, user wants a user-selectable workspace root with picker-based import/export, warning surfacing when remote partial-upload cleanup fails, and native packaging defaults of `arm64-v8a` + `armeabi-v7a` for release with `x86_64` added for debug/dev.
-
-## 2026-04-10T09:47:21Z - GPT-5.4 - User clarified curl workspace, logging, and cleanup preferences
-
-For the planned curl feature, user prefers a workspace directory that acts like the root for Unix-style local paths, logging off by default with optional user-enabled logs and manual clearing, deletion of failed/partial downloads, and best-effort cleanup on cancel including remote partial uploads where possible.
-
-## 2026-04-10T09:37:13Z - GPT-5.4 - Captured detailed curl feature decisions
-
-User specified the planned curl feature as a libcurl-backed paste/run tool with full raw command input, multiline continuations, separate stdout/stderr, optional history, Android picker-based file path rewriting, single active run, background execution, cancellation, and partial-download cleanup.
-
-## 2026-04-10T09:24:08Z - GPT-5.4 - Discussing remaining curl feature specs
-
-Reviewed what still needs to be specified for the planned libcurl-backed paste/run curl feature before implementation starts.
-
-## 2026-04-10T09:23:22Z - GPT-5.4 - User approved paste/run curl direction
-
-User agreed with the paste/run-first direction for a future libcurl-backed curl feature.
-
-## 2026-04-10T09:22:12Z - GPT-5.4 - User prefers paste/run first for curl
-
-For the planned curl feature, user wants a paste/run experience first, with a form-based request builder deferred until later.
-
-## 2026-04-10T09:20:11Z - GPT-5.4 - User is open to libcurl for a future curl feature
-
-Discussed adding a curl feature with real parity expectations. User is comfortable using `libcurl`, which points toward a native Android integration path (NDK/JNI) rather than a Kotlin-only HTTP client.
+## 2026-04-21T18:28:22Z - Claude Sonnet 4.6 - Completed UI/UX review and saved to docs/UIUX_REVIEW1.md
+
+**Scope:** Full UI/UX review of all Jetpack Compose screens: `HomeScreen`, `TransferScreen`, `SftpBrowserScreen`, `ProgressScreen`, `HistoryScreen`, `SavedConnectionsScreen`, and the theme layer.
+
+**Top findings:**
+- Wrong context menu icon in SFTP browser (`DriveFileRenameOutline` instead of `MoreVert`)
+- Cancel transfer button in `ProgressScreen` is a no-op (just dismisses dialog, doesn't cancel the job)
+- Private key path field has no file picker — users must manually type paths
+- Profile edit crammed into an `AlertDialog` — should be `ModalBottomSheet` or dedicated screen
+- No active-transfer indicator on `HomeScreen`
+- Dead `Surface80`/`Surface40` color constants in `Color.kt` unused in `Theme.kt`
+- `SimpleDateFormat` not memoized in `HistoryEntryRow`
+
+**Output:** `docs/UIUX_REVIEW1.md` created with full review, workflow critique, and priority recommendations.
 
 ## 2026-04-09T07:48:52Z - GPT-5.4 - Re-ran lint and tests successfully
 
@@ -374,14 +245,3 @@ Improved the SCP transfer UI so Android Storage Access Framework URIs are no lon
 ### Build/test/install status
 `./gradlew --no-daemon --console=plain lintDebug test installDebug` → BUILD SUCCESSFUL  
 Installed on connected device `SM-A546E`
-
-## 2026-04-10T10:19:42Z - GPT-5.4 - Researched libcurl Android integration strategy
-
-Produced concrete implementation plan for libcurl integration (no files modified — research only). Key decisions:
-
-- **Build strategy**: `scripts/build_native_deps.sh` downloads pinned curl/OpenSSL/nghttp2 sources, cross-compiles via NDK 28 Clang, deposits static `.a` + headers into `app/src/main/cpp/prebuilt/{abi}/`. Prebuilts committed to git (~1.5 MB/ABI).
-- **Compile full curl tool sources** (not just libcurl C API) to avoid reimplementing the argv parser. Rename `main()` to `curl_tool_main()` via `-Dmain=curl_tool_main` at compile time. Link `libcurl_tool.a` + `libcurl.a`.
-- **JNI bridge**: `nativeInit`, `nativeGetVersion`, `nativeGetProtocols`, `nativeIsHttp2Supported`, `nativeStart(args[], workspaceDir, callback)`, `nativeCancel`, `nativeFreeHandle`. Uses pipe pairs + pthreads for streaming stdout/stderr to a Java callback interface wrapped in a Kotlin `callbackFlow`.
-- **CA bundle**: ship Mozilla `cacert.pem` as asset, extract to `filesDir` on first run, pass `--cainfo` as synthetic arg.
-- **Key pitfalls**: `CURLOPT_NOSIGNAL=1` required; `curl_global_init` once from Application.onCreate (not JNI_OnLoad); `_FORTIFY_SOURCE` conflicts building OpenSSL; curl tool global state requires Kotlin Mutex to enforce one-job-at-a-time.
-- **NDK**: Both NDK 27 and 28 present locally. Use NDK 28.2.13676358. ABI filters set per buildType (not defaultConfig) to avoid replacement-vs-merge issue in AGP Kotlin DSL.

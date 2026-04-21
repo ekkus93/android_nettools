@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +63,10 @@ fun ProgressScreen(
 ) {
     val progressMap by viewModel.progress.collectAsState()
     val activeJobs by viewModel.activeJobs.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collect { navController.popBackStack() }
+    }
 
     Scaffold(
         topBar = {
@@ -100,6 +105,7 @@ fun ProgressScreen(
                         job = job,
                         progress = progressMap[job.id],
                         isPrimary = job.id == jobId,
+                        viewModel = viewModel,
                     )
                 }
                 item { Spacer(Modifier.height(16.dp)) }
@@ -113,6 +119,7 @@ private fun TransferCard(
     job: TransferJob,
     progress: TransferProgress?,
     isPrimary: Boolean,
+    viewModel: ProgressViewModel,
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
     val canCancel = job.status in setOf(
@@ -216,12 +223,11 @@ private fun TransferCard(
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
             title = { Text("Cancel transfer?") },
-            text = { Text("The in-progress transfer will be stopped. Partial files will be left on the remote.") },
+            text = { Text("The in-progress transfer will be stopped. Any partial data already transferred may remain on the remote.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // Cancellation is handled by the service via the notification action;
-                        // UI just navigates back.
+                        viewModel.cancelJob(job.id, isPrimary)
                         showCancelDialog = false
                     },
                 ) { Text("Cancel Transfer", color = MaterialTheme.colorScheme.error) }

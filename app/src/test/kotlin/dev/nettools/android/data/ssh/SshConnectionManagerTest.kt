@@ -1,5 +1,6 @@
 package dev.nettools.android.data.ssh
 
+import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
 import net.schmizz.sshj.common.Factory
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test
  */
 class SshConnectionManagerTest {
 
+    private val context: Context = mockk(relaxed = true)
+
     @Test
     fun `filterUnsupportedKeyExchangeFactories removes curve25519 factories`() {
         val curve25519: Factory.Named<KeyExchange> = mockk()
@@ -23,7 +26,7 @@ class SshConnectionManagerTest {
         val group14: Factory.Named<KeyExchange> = mockk()
         every { group14.getName() } returns "diffie-hellman-group14-sha256"
 
-        val manager = SshConnectionManager()
+        val manager = SshConnectionManager(context)
 
         val filtered = manager.filterUnsupportedKeyExchangeFactories(
             listOf(curve25519, curve25519LibSsh, group14),
