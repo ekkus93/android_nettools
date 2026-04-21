@@ -1,5 +1,41 @@
 # Android NetTools — Copilot Memory
 
+## 2026-04-21T19:57:16Z - Claude Sonnet 4.6 - Created docs/UNIT_TESTS1_TODO.md with 9 test phases
+
+**Scope:** Coverage gap analysis across all source files; comprehensive unit test TODO created.
+
+**Gaps identified (by priority):**
+- `SavedConnectionsViewModel` — validation, save/delete, credential coordination (Phase 1)
+- `WorkspacePathResolver` — path normalization edge cases (Phase 2, zero-effort pure logic)
+- `SftpBrowserViewModel` — dialog state machines (rename/delete/mkdir), navigate, setSortOrder (Phase 3)
+- `TransferViewModel` — form validation, `SavedStateHandle` prefill (Phase 4)
+- `SaveCurlOutputUseCase` — content format, path generation (Phase 5)
+- `CurlLogsViewModel` — emission sorting, clearAll delegation (Phase 6)
+- `CancelActiveCurlRunUseCase` / `DispatchPendingCurlRunUseCase` — intent verification (Phases 7–8)
+- `ConnectionProfileRepositoryImpl` / `KnownHostRepositoryImpl` — Room in-memory tests (Phase 9)
+
+**Output:** `docs/UNIT_TESTS1_TODO.md`
+
+## 2026-04-21T19:10:35Z - Claude Sonnet 4.6 - Implemented all UIUX_REVIEW1_TODO.md tasks
+
+**Scope:** All 4 phases of UI/UX fixes from docs/UIUX_REVIEW1_TODO.md — implemented, linted, tested, committed and pushed.
+
+**Key changes:**
+- `ProgressViewModel.cancelJob()` sends CANCEL_JOB intent to service; ProgressScreen cancel button is now functional
+- SFTP browser overflow trigger changed to `MoreVert`; dead code removed
+- Private key file picker (ActivityResultContracts.OpenDocument) added; SshConnectionManager handles `content://` URIs
+- Profile edit moved from AlertDialog to ModalBottomSheet with scrollable form
+- HomeScreen shows active-transfer count banner via HomeViewModel
+- TransferScreen form grouped into Connection/Transfer/Options cards
+- HistoryScreen has FilterChip status filter row; "Transfer again" button pre-fills TransferScreen via SavedStateHandle
+- SFTP browser breadcrumbs always visible (removed size > 1 guard)
+- Material You dynamic color on API 31+ in NetToolsTheme
+- DetailRow label uses wrapContentWidth(); Surface80/Surface40 assigned to surface slots
+- HomeScreen SCP Transfer card elevated with primaryContainer, larger icon/title
+- Hero vector drawable + tagline added to HomeScreen
+
+**Commits:** 70ba717 (Phase 1), ce72087 (Phase 2+3+4), 816dbc7 (TODO/memory update)
+
 ## 2026-04-21T18:28:22Z - Claude Sonnet 4.6 - Completed UI/UX review and saved to docs/UIUX_REVIEW1.md
 
 **Scope:** Full UI/UX review of all Jetpack Compose screens: `HomeScreen`, `TransferScreen`, `SftpBrowserScreen`, `ProgressScreen`, `HistoryScreen`, `SavedConnectionsScreen`, and the theme layer.
@@ -275,3 +311,22 @@ Completed all tasks in docs/UIUX_REVIEW1_TODO.md across 4 phases:
 - Task 4.2: Created `ic_nettools_hero.xml` vector drawable; added hero image and tagline to HomeScreen.
 
 Both phases 1 and 2-4 committed and pushed to master. All lint and unit tests pass.
+
+## 2026-04-21T20:24:09Z - Claude Sonnet 4.6 - Implemented all 9 phases of UNIT_TESTS1_TODO.md
+
+Added 132 new unit tests across 9 phases:
+- Phase 1: SavedConnectionsViewModelTest (31 tests) - editor open/close, field validation, save/delete flows
+- Phase 2: WorkspacePathResolverTest (17 tests) - pure object, path normalization  
+- Phase 3: SftpBrowserViewModelTest (29 tests) - sort, navigate success/failure, dialog state machines
+- Phase 4: TransferViewModelTest extended (20 tests) - validation, auth type, prefill, profile selection
+- Phase 5: SaveCurlOutputUseCaseTest (8 tests) - path gen, content format, delegation
+- Phase 6: CurlLogsViewModelTest (4 tests) - sorted run emission, clearAll
+- Phase 7: CancelActiveCurlRunUseCaseTest (4 tests) - holder interaction, service start
+- Phase 8: DispatchPendingCurlRunUseCaseTest (2 tests) - holder interaction, ordering
+- Phase 9: ConnectionProfileRepositoryImplTest (9 tests) + KnownHostRepositoryImplTest (7 tests) - mocked DAO pattern (no Robolectric)
+
+Key findings:
+- CurlRunHolder.requestCancel() requires relaxed mock for Context (not justRun) to avoid ClassCastException from ComponentName return type
+- Intent stubs with returnDefaultValues=true are no-ops (setters/getters return null); can't test Intent contents in JVM unit tests
+- SftpBrowserViewModel.navigate() and confirm* methods run on Dispatchers.IO; use Thread.sleep waitUntil pattern
+- For Room integration tests: used mocked DAO pattern since Robolectric not in deps
