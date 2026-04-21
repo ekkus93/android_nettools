@@ -245,3 +245,33 @@ Improved the SCP transfer UI so Android Storage Access Framework URIs are no lon
 ### Build/test/install status
 `./gradlew --no-daemon --console=plain lintDebug test installDebug` → BUILD SUCCESSFUL  
 Installed on connected device `SM-A546E`
+
+## 2026-04-21T19:08:13Z - Claude Sonnet 4.6 - Implemented UIUX_REVIEW1_TODO all phases
+
+Completed all tasks in docs/UIUX_REVIEW1_TODO.md across 4 phases:
+
+**Phase 1 (Critical Bug Fixes):**
+- Task 1.1: `ProgressViewModel.cancelJob()` with `@ApplicationContext`, `navigateBack` SharedFlow; `LaunchedEffect` in ProgressScreen for nav; wired cancel dialog confirm button; updated dialog text.
+- Task 1.2: Replaced `DriveFileRenameOutline` trigger icon with `MoreVert` in SftpBrowserScreen; removed dead-code if block.
+- Task 1.3: `SshConnectionManager` now accepts `@ApplicationContext` and handles `content://` key URIs via `loadKeyFromContentUri()`; `SshModule` updated to inject context.
+- Task 1.4: Replaced `ProfileEditDialog` AlertDialog with `ModalBottomSheet` in SavedConnectionsScreen; added `FolderOpen` file picker with persistable URI permission.
+- New tests: `ProgressViewModelTest`, updated `SshConnectionManagerTest`.
+
+**Phase 2 (UX Improvements):**
+- Task 2.1: Created `HomeViewModel` with `activeTransferCount` and `firstActiveJobId`; active transfer banner on HomeScreen; added `HomeViewModelTest`.
+- Task 2.2: TransferScreen form fields wrapped in Connection, Transfer, Options cards.
+- Task 2.3: `statusFilter` StateFlow in HistoryViewModel; `FilterChip` LazyRow in HistoryScreen; expanded `HistoryViewModelTest`.
+- Task 2.4: `Routes.TRANSFER_PATTERN` + `transferPrefill()`; `SavedStateHandle` pre-fill in TransferViewModel; "Transfer again" button in HistoryDetailDialog.
+- Task 2.5: Removed `if (state.breadcrumbs.size > 1)` guard; added single-root breadcrumbs test.
+- Task 2.6: Dynamic Material You colors in Theme.kt with API 31 version guard.
+
+**Phase 3 (Code Cleanup):**
+- Task 3.1: Fixed DetailRow label width (removed fixed 100dp).
+- Task 3.2: SimpleDateFormat already in `remember {}` — no change needed.
+- Task 3.3: Surface80/Surface40 now used in LightColors/DarkColors.
+
+**Phase 4 (Visual Polish):**
+- Task 4.1: SCP Transfer NavCard uses primaryContainer + titleLarge + 48dp icon.
+- Task 4.2: Created `ic_nettools_hero.xml` vector drawable; added hero image and tagline to HomeScreen.
+
+Both phases 1 and 2-4 committed and pushed to master. All lint and unit tests pass.
