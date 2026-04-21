@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +50,7 @@ import androidx.navigation.NavController
 import dev.nettools.android.domain.model.HistoryStatus
 import dev.nettools.android.domain.model.TransferDirection
 import dev.nettools.android.domain.model.TransferHistoryEntry
+import dev.nettools.android.ui.navigation.Routes
 import dev.nettools.android.util.toFormattedSize
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,10 +58,10 @@ import java.util.Locale
 
 /**
  * Transfer History screen — lists all past transfers with status badges.
- * Supports filtering by file name, host, or remote directory via a search field.
- * Tapping an entry shows a full-detail dialog including error messages for failures.
+ * Supports filtering by file name, host, or remote directory via a search field,
+ * and by status via filter chips. Tapping an entry shows a full-detail dialog.
  *
- * @param navController Navigation controller for back navigation.
+ * @param navController Navigation controller for back navigation and "Transfer again".
  * @param viewModel The [HistoryViewModel] supplying history data.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +72,7 @@ fun HistoryScreen(
 ) {
     val history by viewModel.history.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val statusFilter by viewModel.statusFilter.collectAsState()
     val selectedEntry by viewModel.selectedEntry.collectAsState()
     var showClearDialog by remember { mutableStateOf(false) }
 
@@ -119,6 +123,32 @@ fun HistoryScreen(
                 },
                 singleLine = true,
             )
+
+            // Status filter chips
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    FilterChip(
+                        selected = statusFilter == null,
+                        onClick = { viewModel.onStatusFilterChange(null) },
+                        label = { Text("All") },
+                    )
+                }
+                items(HistoryStatus.entries.toList()) { status ->
+                    FilterChip(
+                        selected = statusFilter == status,
+                        onClick = { viewModel.onStatusFilterChange(status) },
+                        label = {
+                            Text(status.name.lowercase().replaceFirstChar { it.uppercase() })
+                        },
+                    )
+                }
+            }
+
             if (history.isEmpty()) {
                 EmptyHistoryPlaceholder(
                     query = searchQuery,
@@ -142,6 +172,17 @@ fun HistoryScreen(
         HistoryDetailDialog(
             entry = entry,
             onDismiss = viewModel::onDetailDismissed,
+            onTransferAgain = { e ->
+                navController.navigate(
+                    Routes.transferPrefill(
+                        host = e.host,
+                        remoteDir = e.remoteDir,
+                        fileName = e.fileName,
+                        direction = e.direction,
+                    )
+                )
+                viewModel.onDetailDismissed()
+            },
         )
     }
 
@@ -166,6 +207,7 @@ fun HistoryScreen(
 private fun HistoryDetailDialog(
     entry: TransferHistoryEntry,
     onDismiss: () -> Unit,
+    onTransferAgain: (TransferHistoryEntry) -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.getDefault()) }
     AlertDialog(
@@ -202,7 +244,12 @@ private fun HistoryDetailDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            Row {
+                TextButton(onClick = { onTransferAgain(entry) }) {
+                    Text("Transfer again")
+                }
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
         },
     )
 }
@@ -214,7 +261,6 @@ private fun DetailRow(label: String, value: String) {
             text = "$label: ",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(100.dp),
         )
         Text(
             text = value,

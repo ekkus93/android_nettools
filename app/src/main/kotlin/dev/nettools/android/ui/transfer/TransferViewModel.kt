@@ -2,6 +2,7 @@ package dev.nettools.android.ui.transfer
 
 import android.content.Context
 import android.content.Intent
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -110,6 +111,7 @@ class TransferViewModel @Inject constructor(
     private val knownHostsManager: KnownHostsManager,
     private val progressHolder: TransferProgressHolder,
     private val sshConnectionManager: SshConnectionManager,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TransferUiState())
@@ -131,6 +133,26 @@ class TransferViewModel @Inject constructor(
         viewModelScope.launch {
             profileRepository.getAll().collect { profiles ->
                 _uiState.update { it.copy(savedProfiles = profiles) }
+            }
+        }
+        // Pre-fill from navigation arguments (e.g. "Transfer again" from history)
+        val prefillHost = savedStateHandle.get<String>("host")
+        val prefillRemoteDir = savedStateHandle.get<String>("remoteDir")
+        val prefillFileName = savedStateHandle.get<String>("fileName")
+        val prefillDirection = savedStateHandle.get<String>("direction")
+        if (!prefillHost.isNullOrBlank()) {
+            val remotePath = if (!prefillRemoteDir.isNullOrBlank() && !prefillFileName.isNullOrBlank()) {
+                "${prefillRemoteDir}/${prefillFileName}"
+            } else ""
+            val direction = prefillDirection?.let {
+                try { TransferDirection.valueOf(it) } catch (_: IllegalArgumentException) { null }
+            }
+            _uiState.update { s ->
+                s.copy(
+                    host = prefillHost,
+                    remotePath = remotePath,
+                    direction = direction ?: s.direction,
+                )
             }
         }
     }

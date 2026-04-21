@@ -150,6 +150,12 @@ class SftpBrowserViewModelSortTest {
     }
 
     @Test
+    fun `buildBreadcrumbs - returns single element for root path`() {
+        val breadcrumbs = SftpBrowserViewModel.buildBreadcrumbs("/")
+        assertEquals(listOf("/"), breadcrumbs)
+    }
+
+    @Test
     fun `buildBreadcrumbs - keeps root breadcrumb for absolute paths`() {
         val breadcrumbs = SftpBrowserViewModel.buildBreadcrumbs("/var/www/html")
 

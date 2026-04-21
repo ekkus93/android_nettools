@@ -20,6 +20,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -28,6 +30,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -60,6 +63,7 @@ import dev.nettools.android.ui.navigation.Routes
 /**
  * SCP Transfer screen.
  * Allows the user to configure an SSH connection and start a file transfer.
+ * Form fields are grouped into Connection, Transfer, and Options cards.
  *
  * @param navController Navigation controller for screen routing.
  * @param viewModel The [TransferViewModel] managing form and transfer state.
@@ -147,191 +151,249 @@ fun TransferScreen(
         ) {
             Spacer(Modifier.height(4.dp))
 
-            // ── Saved profile picker ──────────────────────────────────────────
-            if (state.savedProfiles.isNotEmpty()) {
-                var profileDropdown by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = profileDropdown,
-                    onExpandedChange = { profileDropdown = it },
+            // ── Connection card ───────────────────────────────────────────────
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    OutlinedTextField(
-                        value = state.savedProfiles
-                            .find { it.id == state.selectedProfileId }?.name ?: "Select saved profile…",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Saved Profile") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(profileDropdown) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    Text(
+                        text = "Connection",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    ExposedDropdownMenu(
-                        expanded = profileDropdown,
-                        onDismissRequest = { profileDropdown = false },
+
+                    // Saved profile picker
+                    if (state.savedProfiles.isNotEmpty()) {
+                        var profileDropdown by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = profileDropdown,
+                            onExpandedChange = { profileDropdown = it },
+                        ) {
+                            OutlinedTextField(
+                                value = state.savedProfiles
+                                    .find { it.id == state.selectedProfileId }?.name ?: "Select saved profile…",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Saved Profile") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(profileDropdown) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                            )
+                            ExposedDropdownMenu(
+                                expanded = profileDropdown,
+                                onDismissRequest = { profileDropdown = false },
+                            ) {
+                                state.savedProfiles.forEach { profile ->
+                                    DropdownMenuItem(
+                                        text = { Text(profile.name) },
+                                        onClick = {
+                                            viewModel.onProfileSelected(profile.id)
+                                            profileDropdown = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = state.host,
+                        onValueChange = viewModel::onHostChange,
+                        label = { Text("Host") },
+                        placeholder = { Text("192.168.1.100") },
+                        isError = state.hostError != null,
+                        supportingText = state.hostError?.let { { Text(it) } },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = state.port,
+                            onValueChange = viewModel::onPortChange,
+                            label = { Text("Port") },
+                            isError = state.portError != null,
+                            supportingText = state.portError?.let { { Text(it) } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = state.username,
+                            onValueChange = viewModel::onUsernameChange,
+                            label = { Text("Username") },
+                            isError = state.usernameError != null,
+                            supportingText = state.usernameError?.let { { Text(it) } },
+                            modifier = Modifier.weight(2f),
+                        )
+                    }
+
+                    // Auth method
+                    var authDropdown by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = authDropdown,
+                        onExpandedChange = { authDropdown = it },
                     ) {
-                        state.savedProfiles.forEach { profile ->
+                        OutlinedTextField(
+                            value = if (state.authType == AuthType.PASSWORD) "Password" else "Private Key",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Auth Method") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(authDropdown) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = authDropdown,
+                            onDismissRequest = { authDropdown = false },
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(profile.name) },
-                                onClick = {
-                                    viewModel.onProfileSelected(profile.id)
-                                    profileDropdown = false
-                                },
+                                text = { Text("Password") },
+                                onClick = { viewModel.onAuthTypeChange(AuthType.PASSWORD); authDropdown = false },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Private Key") },
+                                onClick = { viewModel.onAuthTypeChange(AuthType.PRIVATE_KEY); authDropdown = false },
+                            )
+                        }
+                    }
+
+                    when (state.authType) {
+                        AuthType.PASSWORD -> {
+                            OutlinedTextField(
+                                value = state.password,
+                                onValueChange = viewModel::onPasswordChange,
+                                label = { Text("Password") },
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        AuthType.PRIVATE_KEY -> {
+                            OutlinedTextField(
+                                value = state.keyPath,
+                                onValueChange = viewModel::onKeyPathChange,
+                                label = { Text("Key file path") },
+                                placeholder = { Text("/storage/emulated/0/id_rsa") },
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
                 }
             }
 
-            // ── Connection fields ─────────────────────────────────────────────
-            OutlinedTextField(
-                value = state.host,
-                onValueChange = viewModel::onHostChange,
-                label = { Text("Host") },
-                placeholder = { Text("192.168.1.100") },
-                isError = state.hostError != null,
-                supportingText = state.hostError?.let { { Text(it) } },
+            // ── Transfer card ─────────────────────────────────────────────────
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = state.port,
-                    onValueChange = viewModel::onPortChange,
-                    label = { Text("Port") },
-                    isError = state.portError != null,
-                    supportingText = state.portError?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                )
-                OutlinedTextField(
-                    value = state.username,
-                    onValueChange = viewModel::onUsernameChange,
-                    label = { Text("Username") },
-                    isError = state.usernameError != null,
-                    supportingText = state.usernameError?.let { { Text(it) } },
-                    modifier = Modifier.weight(2f),
-                )
-            }
-
-            // ── Auth method ───────────────────────────────────────────────────
-            var authDropdown by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = authDropdown,
-                onExpandedChange = { authDropdown = it },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             ) {
-                OutlinedTextField(
-                    value = if (state.authType == AuthType.PASSWORD) "Password" else "Private Key",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Auth Method") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(authDropdown) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(
-                    expanded = authDropdown,
-                    onDismissRequest = { authDropdown = false },
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Password") },
-                        onClick = { viewModel.onAuthTypeChange(AuthType.PASSWORD); authDropdown = false },
+                    Text(
+                        text = "Transfer",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    DropdownMenuItem(
-                        text = { Text("Private Key") },
-                        onClick = { viewModel.onAuthTypeChange(AuthType.PRIVATE_KEY); authDropdown = false },
-                    )
-                }
-            }
 
-            when (state.authType) {
-                AuthType.PASSWORD -> {
+                    val directions = listOf(TransferDirection.UPLOAD, TransferDirection.DOWNLOAD)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        directions.forEachIndexed { index, direction ->
+                            SegmentedButton(
+                                selected = state.direction == direction,
+                                onClick = { viewModel.onDirectionChange(direction) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = directions.size),
+                                label = { Text(direction.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                            )
+                        }
+                    }
+
                     OutlinedTextField(
-                        value = state.password,
-                        onValueChange = viewModel::onPasswordChange,
-                        label = { Text("Password") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                AuthType.PRIVATE_KEY -> {
-                    OutlinedTextField(
-                        value = state.keyPath,
-                        onValueChange = viewModel::onKeyPathChange,
-                        label = { Text("Key file path") },
-                        placeholder = { Text("/storage/emulated/0/id_rsa") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // ── Transfer direction ────────────────────────────────────────────
-            val directions = listOf(TransferDirection.UPLOAD, TransferDirection.DOWNLOAD)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                directions.forEachIndexed { index, direction ->
-                    SegmentedButton(
-                        selected = state.direction == direction,
-                        onClick = { viewModel.onDirectionChange(direction) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = directions.size),
-                        label = { Text(direction.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                    )
-                }
-            }
-
-            // ── Local path ────────────────────────────────────────────────────
-            OutlinedTextField(
-                value = state.localPathDisplay,
-                onValueChange = viewModel::onLocalPathChange,
-                label = { Text(if (state.direction == TransferDirection.UPLOAD) "Local file" else "Download to") },
-                isError = state.localPathError != null,
-                supportingText = state.localPathError?.let { { Text(it) } },
-                trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            if (state.direction == TransferDirection.UPLOAD) {
-                                filePicker.launch(arrayOf("*/*"))
-                            } else {
-                                dirPicker.launch(null)
+                        value = state.localPathDisplay,
+                        onValueChange = viewModel::onLocalPathChange,
+                        label = { Text(if (state.direction == TransferDirection.UPLOAD) "Local file" else "Download to") },
+                        isError = state.localPathError != null,
+                        supportingText = state.localPathError?.let { { Text(it) } },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (state.direction == TransferDirection.UPLOAD) {
+                                        filePicker.launch(arrayOf("*/*"))
+                                    } else {
+                                        dirPicker.launch(null)
+                                    }
+                                },
+                            ) {
+                                Icon(Icons.Filled.FolderOpen, contentDescription = "Pick local path")
                             }
                         },
-                    ) {
-                        Icon(Icons.Filled.FolderOpen, contentDescription = "Pick local path")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
-            // ── Remote path ───────────────────────────────────────────────────
-            OutlinedTextField(
-                value = state.remotePath,
-                onValueChange = viewModel::onRemotePathChange,
-                label = { Text("Remote path") },
-                placeholder = { Text("/home/user/files") },
-                isError = state.remotePathError != null,
-                supportingText = state.remotePathError?.let { { Text(it) } },
-                trailingIcon = {
-                    TextButton(
-                        onClick = { viewModel.browseRemotePath() },
-                        enabled = !state.isConnecting && state.host.isNotBlank() && state.username.isNotBlank(),
-                    ) {
-                        Text("Browse…")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
+                    OutlinedTextField(
+                        value = state.remotePath,
+                        onValueChange = viewModel::onRemotePathChange,
+                        label = { Text("Remote path") },
+                        placeholder = { Text("/home/user/files") },
+                        isError = state.remotePathError != null,
+                        supportingText = state.remotePathError?.let { { Text(it) } },
+                        trailingIcon = {
+                            TextButton(
+                                onClick = { viewModel.browseRemotePath() },
+                                enabled = !state.isConnecting && state.host.isNotBlank() && state.username.isNotBlank(),
+                            ) {
+                                Text("Browse…")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
-            // ── Save profile ──────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = state.saveProfile, onCheckedChange = viewModel::onSaveProfileChange)
-                Text("Save as connection profile")
+                    Text(
+                        text = "e.g. /home/user/uploads",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            if (state.saveProfile) {
-                OutlinedTextField(
-                    value = state.profileName,
-                    onValueChange = viewModel::onProfileNameChange,
-                    label = { Text("Profile name") },
-                    placeholder = { Text(state.host.ifBlank { "My Server" }) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+
+            // ── Options card ──────────────────────────────────────────────────
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Options",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = state.saveProfile, onCheckedChange = viewModel::onSaveProfileChange)
+                        Text("Save as connection profile")
+                    }
+                    if (state.saveProfile) {
+                        OutlinedTextField(
+                            value = state.profileName,
+                            onValueChange = viewModel::onProfileNameChange,
+                            label = { Text("Profile name") },
+                            placeholder = { Text(state.host.ifBlank { "My Server" }) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
 
             // ── Transfer button ───────────────────────────────────────────────

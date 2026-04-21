@@ -68,6 +68,7 @@ class TransferViewModelTest {
             knownHostsManager = knownHostsManager,
             progressHolder = progressHolder,
             sshConnectionManager = sshConnectionManager,
+            savedStateHandle = androidx.lifecycle.SavedStateHandle(),
         )
     }
 

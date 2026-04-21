@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Unit tests for [HistoryViewModel], verifying filter logic, detail dialog state,
- * and clear-all delegation to the repository.
+ * status filter, and clear-all delegation to the repository.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModelTest {
@@ -42,6 +42,7 @@ class HistoryViewModelTest {
         fileName: String = "file.txt",
         host: String = "server.local",
         remoteDir: String = "/home/user",
+        status: HistoryStatus = HistoryStatus.SUCCESS,
     ) = TransferHistoryEntry(
         id = id,
         timestamp = 0L,
@@ -51,7 +52,7 @@ class HistoryViewModelTest {
         fileName = fileName,
         remoteDir = remoteDir,
         fileSizeBytes = 100L,
-        status = HistoryStatus.SUCCESS,
+        status = status,
     )
 
     @BeforeEach
@@ -154,6 +155,58 @@ class HistoryViewModelTest {
         viewModel.onSearchQueryChange("")
         advanceUntilIdle()
         assertEquals(2, viewModel.history.first().size)
+    }
+
+    // ── statusFilter ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `statusFilter null - returns all entries regardless of status`() = runTest(testDispatcher) {
+        allEntries.value = listOf(
+            makeEntry("1", status = HistoryStatus.SUCCESS),
+            makeEntry("2", status = HistoryStatus.FAILED),
+            makeEntry("3", status = HistoryStatus.CANCELLED),
+        )
+        advanceUntilIdle()
+
+        viewModel.onStatusFilterChange(null)
+        advanceUntilIdle()
+
+        assertEquals(3, viewModel.history.first().size)
+    }
+
+    @Test
+    fun `statusFilter SUCCESS - returns only success entries`() = runTest(testDispatcher) {
+        allEntries.value = listOf(
+            makeEntry("1", status = HistoryStatus.SUCCESS),
+            makeEntry("2", status = HistoryStatus.FAILED),
+            makeEntry("3", status = HistoryStatus.SUCCESS),
+        )
+        advanceUntilIdle()
+
+        viewModel.onStatusFilterChange(HistoryStatus.SUCCESS)
+        advanceUntilIdle()
+
+        val result = viewModel.history.first()
+        assertEquals(2, result.size)
+        assertTrue(result.all { it.status == HistoryStatus.SUCCESS })
+    }
+
+    @Test
+    fun `text search and statusFilter combined - returns correct subset`() = runTest(testDispatcher) {
+        allEntries.value = listOf(
+            makeEntry("1", fileName = "report.pdf", status = HistoryStatus.SUCCESS),
+            makeEntry("2", fileName = "video.mp4", status = HistoryStatus.SUCCESS),
+            makeEntry("3", fileName = "report.zip", status = HistoryStatus.FAILED),
+        )
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChange("report")
+        viewModel.onStatusFilterChange(HistoryStatus.SUCCESS)
+        advanceUntilIdle()
+
+        val result = viewModel.history.first()
+        assertEquals(1, result.size)
+        assertEquals("report.pdf", result.first().fileName)
     }
 
     // ── detail dialog state ───────────────────────────────────────────────────

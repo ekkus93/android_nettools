@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Background circle -->
+    <path
+        android:fillColor="#00686F"
+        android:pathData="M48,4C23.699,4 4,23.699 4,48C4,72.301 23.699,92 48,92C72.301,92 92,72.301 92,48C92,23.699 72.301,4 48,4Z"/>
+    <!-- Upload arrow (pointing up-right) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,55 L30,42 L56,42 L56,36 L68,48 L56,60 L56,55 Z"/>
+    <!-- Download arrow (pointing down-left) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,41 L66,54 L40,54 L40,60 L28,48 L40,36 L40,41 Z"/>
+</vector>
